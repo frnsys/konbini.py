@@ -5,8 +5,7 @@
 <header>
     <h1>{{ product.name }}: SKU</h1>
 </header>
-<form method="POST" action="{{ action }}">
-  {% include "_messages.html" %}
+<form method="POST">
   {{ form.hidden_tag() }}
   {{ render_field_with_errors(form.name) }}
   {{ render_field_with_errors(form.stock) }}

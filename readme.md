@@ -50,14 +50,15 @@
             - FORM: email to cancel
         - POST /plan/manage: cancel subscription
         - POST /checkout: complete checkout
+        - POST /cart/add: add item to cart
     - /admin
         - GET /: list products
+        - GET /product: add product form
+        - POST /product: add product
         - GET /product/<slug>: edit product form
         - POST /product/<slug>: edit product
         - GET /product/<slug>/<sku>: edit SKU form
         - POST /product/<slug>/<sku>: edit SKU
-        - GET /product: add product form
-        - POST /product: add product
         - POST /product/<slug>/<sku>/image: add image
         - DELETE /product/<slug>/<sku>/image: delete image
         - NOTE: other management happens via Stripe

@@ -9,9 +9,23 @@
     <p>{{ product.desc }}</p>
     <h3>{{ product.price_str }}</h3>
 
-    {% for sku in product.skus %}
-    <div>{{ sku.name }} {% if sku.stock %}({{ sku.stock }}){% else %}Out of Stock{% endif %}</div>
-    {% endfor %}
+    {% if product.in_stock %}
+        <form action='{{ url_for('cart') }}' method='POST'>
+            {% if product.skus|length > 1 %}
+                <select name='sku'>
+                {% for sku in product.skus %}
+                    {% if sku.stock %}
+                        <option value={{ sku.id }}>{{ sku.name }}</option>
+                    {% endif %}
+                {% endfor %}
+                </select>
+            {% else %}
+                <input type='hidden' name='sku' value={{ product.skus[0].id }}>
+            {% endif %}
+            <input type="submit" value="Add to Cart">
+        </form>
+    {% else %}
+        <h2>Out of stock</h2>
+    {% endif %}
 </div>
 {% endblock %}
-
