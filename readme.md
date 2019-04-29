@@ -1,0 +1,69 @@
+- Stripe
+    - Payment processing
+    - Recurring payments/subscriptions
+        - Create subscription with plan
+    - Taxes
+- Shippo
+    - Shipping labels
+- Mailgun
+    - Emails
+- Flask
+    - Backend
+        - Save subscription ids w/ emails
+        - Save order manifests w/ emails
+        - Coordinate Stripe & Shippo
+        - Send order emails
+        - Send shipping notifications (Shippo webhooks)
+    - Frontend
+        - Cart
+        - Checkout flow
+        - Products
+        - Create new subscription
+        - Cancel subscription
+        - Update email
+- Models
+    - Product
+        - Name
+        - Description
+        - Price
+        - SKUs
+            - Name
+            - Images
+            - Stock
+    - Order
+        - Customer ID
+        - Items
+            - SKU
+            - Quantity
+    - Subscription
+        - Subscription ID
+        - Customer ID
+    - NOTES
+        - Subscription plans created via Stripe
+- Routes
+    - /
+        - GET /: list products & subscription plans
+        - GET /product/<slug>: view product
+        - GET /plan/<slug>: view subscription plan
+        - POST /plan/<slug>: subscribe to plan
+        - GET /plan/manage: cancel subscription form
+            - FORM: email to cancel
+        - POST /plan/manage: cancel subscription
+        - POST /checkout: complete checkout
+    - /admin
+        - GET /: list products
+        - GET /product/<slug>: edit product form
+        - POST /product/<slug>: edit product
+        - GET /product/<slug>/<sku>: edit SKU form
+        - POST /product/<slug>/<sku>: edit SKU
+        - GET /product: add product form
+        - POST /product: add product
+        - POST /product/<slug>/<sku>/image: add image
+        - DELETE /product/<slug>/<sku>/image: delete image
+        - NOTE: other management happens via Stripe
+    - /shipping (shippo webhooks)
+
+For all non-admin routes, show cart on page
+    - Remove from cart
+    - Edit quantity
+    - Checkout

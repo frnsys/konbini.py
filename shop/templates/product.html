@@ -1,0 +1,17 @@
+{% from "_macros.html" import pagination %}
+{% extends 'layout.html' %}
+
+{% block content %}
+<header>
+    <h1>{{ product.name }}</h1>
+</header>
+<div>
+    <p>{{ product.desc }}</p>
+    <h3>{{ product.price_str }}</h3>
+
+    {% for sku in product.skus %}
+    <div>{{ sku.name }} {% if sku.stock %}({{ sku.stock }}){% else %}Out of Stock{% endif %}</div>
+    {% endfor %}
+</div>
+{% endblock %}
+
