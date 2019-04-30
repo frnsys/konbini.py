@@ -36,7 +36,6 @@ def plan(id):
     product = stripe.Product.retrieve(id)
     if product is None or not product.active: abort(404)
     plans = stripe.Plan.list(limit=100, product=id, active=True)['data']
-    print(plans)
     return render_template('plan.html', product=product, plans=plans)
 
 @bp.route('/cart', methods=['GET', 'POST'])
@@ -72,8 +71,6 @@ def cart():
 def update_cart():
     sku_id = request.form['sku']
     quantity = int(request.form['quantity'])
-    print(sku_id)
-    print(quantity)
 
     if 'cart' not in session:
         session['cart'] = {}
