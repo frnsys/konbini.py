@@ -1,16 +1,36 @@
 import config
+import shippo
 import stripe
+from flask_mail import Message
 from .forms import CheckoutForm
 from urllib.parse import urlparse, urljoin
-from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash
+from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app
 
 bp = Blueprint('main', __name__)
+
+def send_email(to, subject, template, reply_to=None, bcc=None, **kwargs):
+    msg = Message(subject,
+                body=render_template('email/{}.txt'.format(template), **kwargs),
+                html=render_template('email/{}.html'.format(template), **kwargs),
+                recipients=[to],
+                reply_to=reply_to,
+                bcc=bcc)
+    current_app.mail.send(msg)
+
+def is_in_stock(sku):
+    inv = sku['inventory']
+    if inv['type'] == 'bucket' and inv['value'] == 'out_of_stock':
+        return False
+    elif inv['type'] == 'finite' and inv['quantity'] == 0:
+        return False
+    return True
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and \
            ref_url.netloc == test_url.netloc
+
 
 @bp.route('/')
 def products():
@@ -24,6 +44,8 @@ def product(id):
     if product is None or not product.active: abort(404)
     skus = stripe.SKU.list(limit=100, product=id, active=True)['data']
     images = set(product.images + [s.image for s in skus])
+    for sku in skus:
+        sku['in_stock'] = is_in_stock(sku)
     return render_template('product.html', product=product, skus=skus, images=images)
 
 @bp.route('/plans')
@@ -128,7 +150,7 @@ def pay():
         payment_method_types=['card'],
         line_items=[{
             'name': session['meta'][sku_id]['name'],
-            'amount': session['meta'][sku_id]['price']*quantity,
+            'amount': session['meta'][sku_id]['price'],
             'currency': 'usd',
             'quantity': quantity,
         } for sku_id, quantity in session['cart'].items()],
@@ -170,11 +192,64 @@ def checkout_completed_hook():
         # If subscription is set,
         # assume that this is a checkout
         # for a subscription only
-        if session['subscription'] is None:
+        if session['subscription'] is not None:
             return '', 200
 
-        # TODO fulfillment
-        print(session)
+        else:
+            # Get associated order,
+            # check its state
+            order_id = session['client_reference_id']
+            order = stripe.Order.retrieve(order_id)
+            if order['status'] != 'created':
+                return '', 200
+
+            customer_id = session['customer']
+            customer = stripe.Customer.retrieve(customer_id)
+            customer_email = customer['email']
+
+            # For now, assuming only one shipping method
+            # order['selected_shipping_method']
+
+            addr = order['shipping']['address']
+            address_to = {
+                'name': order['shipping']['name'],
+                'city': addr['city'],
+                'country': addr['country'],
+                'street1': addr['line1'],
+                'street2': addr['line2'],
+                'state': addr['state'],
+                'zip': addr['postal_code']
+            }
+
+            # Create shipping label
+            # <https://goshippo.com/docs/shipping-labels/#instalabel>
+            # tx = shippo.Transaction.create(
+            #     shipment={
+            #         'address_from': config.SHIP_FROM_ADDRESS,
+            #         'address_to': address_to,
+            #         # 'parcels': [parcel] # TODO?
+            #     },
+            #     # TODO
+            #     carrier_account='b741b99f95e841639b54272834bc478c',
+            #     servicelevel_token='usps_priority'
+            # )
+
+            items = [{
+                'amount': i['amount'],
+                'quantity': i['quantity'],
+                'description': i['custom']['name']
+            } for i in session['display_items']] + order['items'][2:]
+
+            # Notify fulfillment person
+            # label_url = tx['label_url']
+            label_url = 'testing'
+            send_email(config.NEW_ORDER_RECIPIENT, 'New order placed', 'new_order', order=order, items=items, label_url=label_url)
+
+            # Notify customer
+            # tracking_url = tx['tracking_url_provider']
+            tracking_url = 'testing'
+            send_email(customer_email, 'Thank you for your order', 'complete_order', order=order, items=items, tracking_url=tracking_url)
+
     return '', 200
 
 @bp.route('/subscribe', methods=['GET', 'POST'])

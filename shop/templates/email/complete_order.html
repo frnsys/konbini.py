@@ -1,0 +1,24 @@
+{% extends 'email/layout.html' %}
+{% block content %}
+<div>
+  <div style="line-height: 10px; font-size: 1px">&nbsp;</div>
+  <div style="font-size:12px;line-height:18px;font-family:&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif;color:#222222;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 18px"><span style="font-size: 18px; line-height: 27px;"><strong><span style="line-height: 27px; font-size: 18px;">Thank you for your order.</span></strong></span></p></div>
+</div>
+<div>
+  <div style="margin-top:20px;margin-bottom:10px;font-weight:bold;">Order #{{ order.id[3:] }}</div>
+  <table style="width:100%;">
+      {% for item in items %}
+        <tr>
+            <td>{{ item.description }}</td>
+            <td>{{ item.quantity or '' }}</td>
+            <td style="text-align:right;">{{ '${:,.2f}'.format(item.amount/100) }}</td>
+        </tr>
+       {% endfor %}
+       <tr>
+           <td>Total</td>
+           <td></td>
+           <td style="text-align:right;">{{ '${:,.2f}'.format(order.amount/100) }}</td>
+       </tr>
+  </table>
+</div>
+{% endblock %}

@@ -23,7 +23,11 @@
                                 <div>{{ sku.attributes.values()|join(', ') }}</div>
                                 <div class="sku--price">{{ '${:,.2f}'.format(sku.price/100) }}</div>
                             </div>
-                            <input type="submit" value='Add to Cart'>
+                            {% if sku.in_stock %}
+                                <input type="submit" value='Add to Cart'>
+                            {% else %}
+                                <input type="submit" disabled value='Out of Stock'>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

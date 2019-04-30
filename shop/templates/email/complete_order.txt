@@ -1,0 +1,10 @@
+Thank you for your order.
+
+Order #{{ order.id }}
+
+{% for item in items %}
+{{ item.description }}
+    {{ item.quantity }}
+    {{ '${:,.2f}'.format(item.amount/100) }}
+{% endfor %}
+Total: {{ '${:,.2f}'.format(order.amount/100) }}

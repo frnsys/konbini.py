@@ -11,3 +11,5 @@ Stripe's backend manages:
     - in particular, setup a webhook for `checkout.session.completed`
 
 For development, you'll need `ngrok` or something similar to expose the local web application for webhooks.
+
+Setup Shippo-Stripe integration: <https://stripe.com/docs/orders/shippo>

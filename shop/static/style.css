@@ -155,6 +155,12 @@ main {
 .sku input[type=submit]:hover {
   background: #333;
 }
+.sku input[type=submit][disabled],
+.sku input[type=submit][disabled]:hover {
+  cursor: default;
+  background: #ccc;
+  color: #222;
+}
 .sku--price {
   color: #666;
 }
