@@ -49,24 +49,31 @@ img {
 main {
   padding: 1em;
 }
-.cart {
+.cart, .checkout {
   max-width: 480px;
   margin: 0 auto;
 }
-.cart table {
+.cart table, .checkout table {
   font-size: 0.9em;
   width: 100%;
   text-align: left;
   border-collapse: collapse;
 }
 .cart td:last-child,
-.cart .cart--quantity {
+.cart .cart--quantity,
+.checkout td:last-child {
   text-align: right;
 }
-.cart tr:last-child {
+.cart tr:last-child,
+.checkout tr:last-child {
   font-weight: bold;
   background: #1541f2;
   color: #fff;
+}
+.checkout tr:first-child {
+  font-weight: normal;
+  background: none;
+  color: #000;
 }
 .cart .cart--update-quantity {
   display: inline;
@@ -79,6 +86,41 @@ main {
   padding: 0;
   display: inline;
   cursor: pointer;
+}
+
+.checkout .form-field {
+  margin: 0 0 0.5em 0;
+}
+.checkout .form-field label {
+  display: block;
+}
+.checkout .form-field input {
+  width: 100%;
+}
+.checkout .column-2 {
+  display: flex;
+}
+.checkout .column-2 .form-field {
+  flex-basis: 50%;
+}
+.checkout .column-2 .form-field:first-child {
+  padding-right: 1em;
+}
+.checkout input[type=submit],
+.checkout button {
+  width: 100%;
+  display: block;
+  margin: 1em 0;
+  padding: 0.5em;
+  color: #fff;
+  background: #1541f2;
+  text-align: center;
+  font-family: 'Source Sans Pro', sans-serif;
+  border: none;
+  font-size: 1em;
+  cursor: pointer;
+  padding: 0.5em;
+  box-shadow: 2px 2px 0 0 black;
 }
 
 .grid {
@@ -170,6 +212,9 @@ nav li {
   box-shadow: 2px 2px 0 black;
   pointer-events: all;
 }
+.flashes li.error {
+  background: #fd3304;
+}
 
 .product {
   width: 100%;
@@ -198,7 +243,7 @@ nav li {
   box-shadow: 3px 3px 0 0 black;
 }
 
-button.checkout {
+a.go-checkout {
   color: #fff;
   border: none;
   font-size: 1em;
@@ -208,16 +253,22 @@ button.checkout {
   font-family: 'Source Sans Pro', sans-serif;
   box-shadow: 2px 2px 0 0 black;
 }
-button.checkout:hover {
+a.go-checkout:hover {
   background: #333;
 }
-.flashes button.checkout {
+.flashes a.go-checkout {
   margin-left: 0.5em;
 }
-.cart button.checkout {
+.cart a.go-checkout {
   width: 100%;
+  display: block;
   margin: 1em 0;
   padding: 0.5em;
   background: #1541f2;
+  text-align: center;
 }
 
+.thanks {
+  margin: 6em auto 3em auto;
+  text-align: center;
+}

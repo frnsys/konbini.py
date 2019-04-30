@@ -1,0 +1,28 @@
+{% from "_macros.html" import render_field_with_errors %}
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="checkout">
+    <h2>Checkout</h2>
+    <h3>Shipping address</h3>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ form.address.hidden_tag() }}
+        {{ render_field_with_errors(form.name) }}
+        {{ render_field_with_errors(form.address.line1) }}
+        {{ render_field_with_errors(form.address.line2) }}
+        <div class="column-2">
+            {{ render_field_with_errors(form.address.city) }}
+            {{ render_field_with_errors(form.address.state) }}
+        </div>
+        <div class="column-2">
+            {{ render_field_with_errors(form.address.country) }}
+            {{ render_field_with_errors(form.address.postal_code) }}
+        </div>
+        <div class="actions">
+            <input type="submit" value="Save Address">
+        </div>
+    </form>
+</div>
+{% endblock %}
+

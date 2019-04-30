@@ -1,4 +1,6 @@
+import config
 import stripe
+from .forms import CheckoutForm
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash
 
@@ -9,7 +11,6 @@ def is_safe_url(target):
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and \
            ref_url.netloc == test_url.netloc
-
 
 @bp.route('/')
 def products():
@@ -41,50 +42,163 @@ def plan(id):
 @bp.route('/cart', methods=['GET', 'POST'])
 def cart():
     if request.method == 'GET':
-        subtotal = sum(session['meta'][id]['price'] * q for id, q in session['cart'].items())
+        subtotal = sum((session['meta'][id]['price'] * q for id, q in session.get('cart', {}).items()), 0)
         return render_template('cart.html', subtotal=subtotal)
 
     name = request.form['name']
     sku_id = request.form['sku']
-
-    sku = stripe.SKU.retrieve(sku_id)
-    price = sku.price
+    quantity = request.form.get('quantity')
+    if quantity is not None:
+        quantity = int(quantity)
 
     if 'cart' not in session:
         session['cart'] = {}
-    session['cart'][sku_id] = session['cart'].get(sku_id, 0) + 1
+
+    # If no quantity specified, add one
+    if quantity is None:
+        added = True
+        session['cart'][sku_id] = session['cart'].get(sku_id, 0) + 1
+    else:
+        added = False
+        session['cart'][sku_id] = quantity
 
     if 'meta' not in session:
         session['meta'] = {}
-    session['meta'][sku_id] = {
-        'name': name,
-        'price': price
-    }
 
-    flash('Added "{}" to cart.'.format(name), category='cart')
-
-    if is_safe_url(request.referrer):
-        return redirect(request.referrer)
-    return redirect(url_for('main.products'))
-
-@bp.route('/cart/update', methods=['POST'])
-def update_cart():
-    sku_id = request.form['sku']
-    quantity = int(request.form['quantity'])
-
-    if 'cart' not in session:
-        session['cart'] = {}
-
-    session['cart'][sku_id] = quantity
-    if not quantity:
+    # Delete item from cart if quantity is 0
+    if quantity == 0:
         del session['cart'][sku_id]
 
-    flash('Cart updated.')
+    # Otherwise, update product info
+    else:
+        if sku_id.startswith('sku_'):
+            sku = stripe.SKU.retrieve(sku_id)
+            price = sku.price
+            interval = None
+        elif sku_id.startswith('plan_'):
+            sku = stripe.Plan.retrieve(sku_id)
+            price = sku.amount
+            interval = sku.interval
+        session['meta'][sku_id] = {
+            'name': name,
+            'price': price,
+            'interval': interval
+        }
+
+    if added:
+        flash('Added "{}" to cart.'.format(name), category='cart')
+    else:
+        flash('Cart updated.')
 
     if is_safe_url(request.referrer):
         return redirect(request.referrer)
     return redirect(url_for('main.products'))
 
-@bp.route('/checkout')
+@bp.route('/checkout', methods=['GET', 'POST'])
 def checkout():
-    pass
+    if not session.get('cart'):
+        return redirect(url_for('main.products'))
+
+    form = CheckoutForm()
+    if form.validate_on_submit():
+        session['order'] = stripe.Order.create(
+            currency='usd',
+            items=[{
+                'type': 'sku',
+                'parent': sku_id,
+                'quantity': quantity,
+                'amount': session['meta'][sku_id]['price'],
+                'description': session['meta'][sku_id]['name']
+            } for sku_id, quantity in session['cart'].items()],
+            shipping={
+                'name': form.data['name'],
+                'address': {k: form.data['address'][k] for k in
+                    ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
+            })
+        return redirect(url_for('main.pay'))
+    return render_template('checkout.html', form=form)
+
+@bp.route('/checkout/pay')
+def pay():
+    if not session.get('order'):
+        return redirect(url_for('main.cart'))
+
+    session['stripe'] = stripe.checkout.Session.create(
+        client_reference_id=session['order']['id'],
+        payment_method_types=['card'],
+        line_items=[{
+            'name': session['meta'][sku_id]['name'],
+            'amount': session['meta'][sku_id]['price']*quantity,
+            'currency': 'usd',
+            'quantity': quantity,
+        } for sku_id, quantity in session['cart'].items()],
+        success_url=url_for('main.checkout_success', _external=True),
+        cancel_url=url_for('main.checkout_cancel', _external=True))
+    return render_template('pay.html')
+
+@bp.route('/checkout/success')
+def checkout_success():
+    for k in ['cart', 'plan', 'stripe', 'order']:
+        if k in session: del session[k]
+    return render_template('thanks.html')
+
+@bp.route('/checkout/cancel')
+def checkout_cancel():
+    return 'cancelled' # TODO
+
+@bp.route('/checkout/completed', methods=['POST'])
+def checkout_completed_hook():
+    payload = request.data
+    sig_header = request.headers['Stripe-Signature']
+    event = None
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, config.STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError:
+        # Invalid payload
+        return abort(400)
+    except stripe.error.SignatureVerificationError:
+        # Invalid signature
+        return abort(400)
+
+    # Handle the checkout.session.completed event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+
+        # If subscription is set,
+        # assume that this is a checkout
+        # for a subscription only
+        if session['subscription'] is None:
+            return '', 200
+
+        # TODO fulfillment
+        print(session)
+    return '', 200
+
+@bp.route('/subscribe', methods=['GET', 'POST'])
+def subscribe():
+    if request.method == 'POST':
+        name = request.form['name']
+        price = request.form['price']
+        plan_id = request.form['id']
+        session['plan'] = {
+            'name': name,
+            'price': price,
+            'plan_id': plan_id
+        }
+
+    if not session['plan']:
+        return redirect(url_for('main.plans'))
+
+    session['stripe'] = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        subscription_data={
+            'items': [{
+                'plan':  session['plan']['plan_id']
+            }]
+        },
+        success_url=url_for('main.checkout_success', _external=True),
+        cancel_url=url_for('main.checkout_cancel', _external=True))
+    return render_template('subscribe.html', **session['plan'])

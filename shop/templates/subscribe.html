@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="checkout checkout-plan">
+    <h2>Review Order</h2>
+    <h4>Subscription</h4>
+    <table>
+        <tbody>
+            <tr>
+                <td>{{ name }}</td>
+                <td>{{ price }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <button id="js-pay">Pay</button>
+</div>
+{% include "_stripe.html" %}
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="checkout">
+    <h2>Review Order</h2>
+    <h4>Items</h4>
+    <div>
+        <table>
+            <tbody>
+                {% for item in session.order['items'] %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.quantity or '' }}</td>
+                        <td>{{ '${:,.2f}'.format(item.amount/100) }}</td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td>Total</td>
+                    <td></td>
+                    <td>{{ '${:,.2f}'.format(session.order.amount/100) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <h4>Shipping to</h4>
+    <div>
+        <div>{{ session.order.shipping.name }}</div>
+        <div>{{ session.order.shipping.address.line1 }}</div>
+        {% if session.order.shipping.address.line2 %}
+            <div>{{ session.order.shipping.address.line2 }}</div>
+        {% endif %}
+        <div>{{ session.order.shipping.address.city }}, {{ session.order.shipping.address.state }}</div>
+        <div>{{ session.order.shipping.address.country }}, {{ session.order.shipping.address.postal_code }}</div>
+    </div>
+    <button id="js-pay">Pay</button>
+</div>
+{% include "_stripe.html" %}
+{% endblock %}

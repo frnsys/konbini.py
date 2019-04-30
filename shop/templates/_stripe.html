@@ -1,0 +1,20 @@
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    {% if session['stripe']['id'] %}
+        let checkoutButton = document.getElementById('js-pay');
+        if (checkoutButton) {
+            const stripe = Stripe('{{ config.STRIPE_PUBLIC_KEY }}');
+            checkoutButton.addEventListener('click', () => {
+                stripe.redirectToCheckout({
+                    sessionId: '{{ session['stripe']['id'] }}',
+                }).then(function (result) {
+                    let flash = document.createElement('li');
+                    flash.innerText = result.error.message;
+                    flash.className = 'error';
+                    document.getElementById('flashes').appendChild(flash);
+                });
+            });
+        }
+    {% endif %}
+</script>
+

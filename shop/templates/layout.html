@@ -21,7 +21,7 @@
                 <li><a href="{{ url_for('main.products') }}">Products</a></li>
                 <li><a href="{{ url_for('main.plans') }}">Subscriptions</a></li>
 
-                {% set cart_size = session['cart'].values()|sum %}
+                {% set cart_size = session.get('cart', {}).values()|sum %}
                 <li><a href="{{ url_for('main.cart') }}">Cart{% if cart_size > 0 %} ({{ cart_size }}){% endif %}</a></li>
             </ul>
         </nav>
@@ -31,23 +31,5 @@
         {% block content %}
         {% endblock %}
     </main>
-    <script src="https://checkout.stripe.com/checkout.js"></script>
-    <script>
-        var handler = StripeCheckout.configure({
-            key: '{{ config.STRIPE_PUBLIC_KEY }}',
-            name: 'TESTING',
-            locale: 'auto',
-            description: 'TESTING',
-            alipay: true,
-            token: function(token, args) {
-                var amount = parseInt($('[name=amount]').val());
-                $('<form action="/donate" method="post">\
-                    <input value="'+amount+'" name="amount">\
-                    <input value="'+token.email+'" name="email">\
-                    <input value="'+token.id+'" name="token">\
-                    </form>').appendTo(document.body).submit();
-            }
-        });
-    </script>
 </body>
 </html>

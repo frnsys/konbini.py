@@ -14,15 +14,16 @@
         <div class="product--skus">
             {% for plan in plans %}
                 <div class="product--sku">
-                    <form action='{{ url_for('main.cart') }}' method='POST'>
-                        <input type='hidden' name='sku' value={{ plan.id }}>
+                    <form action='{{ url_for('main.subscribe') }}' method='POST'>
+                        <input type='hidden' name='id' value={{ plan.id }}>
                         <input type='hidden' name='name' value='{{ product.name }} - {{ plan.nickname }}'>
+                        <input type='hidden' name='price' value='{{ '${:,.2f}'.format(plan.amount/100) }}/{{ plan.interval }}'>
                         <div class="sku">
                             <div>
                                 <div>{{ plan.nickname }}</div>
                                 <div class="sku--price">{{ '${:,.2f}'.format(plan.amount/100) }}/{{ plan.interval }}</div>
                             </div>
-                            <input type="submit" value='Add to Cart'>
+                            <input type="submit" value='Subscribe'>
                         </div>
                     </form>
                 </div>
