@@ -1,24 +1,26 @@
-{% from "_macros.html" import pagination %}
 {% extends 'layout.html' %}
 
 {% block content %}
-<header>
-    <h1>Products</h1>
-</header>
+<h1>Products</h1>
 {% if not products %}
     <h2>No products</h2>
 {% else %}
-    <ul class="listing">
+    <ul class="grid">
         {% for p in products %}
-            <li class="product">
-                <a href="{{ url_for('main.product', slug=p.slug) }}">
-                    <img src="{{ p.image }}" class="thumb" />
-                </a>
+            <li class="item">
+                <figure>
+                    <a href="{{ url_for('main.product', id=p.id[5:]) }}">
+                        <img src="{{ p.images[0] }}" class="thumb" />
+                    </a>
+                </figure>
                 <div class="justify-vertical">
-                    <h2>{{ p.name }}</h2>
+                    <h2>
+                        <a href="{{ url_for('main.product', id=p.id[5:]) }}">
+                            {{ p.name }}
+                        </a>
+                    </h2>
                     <div class="meta">
-                        <div>{% if p.desc %}{{ p.desc }}{% else %}(No description){% endif %}</div>
-                        <div><em>${{ p.price/100 }}</em></div>
+                        <div>{{ p.caption }}</div>
                     </div>
                 </div>
             </li>

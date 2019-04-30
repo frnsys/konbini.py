@@ -1,0 +1,14 @@
+{%- with messages = get_flashed_messages(with_categories=true) -%}
+  {% if messages %}
+    <ul class="flashes" id="flashes">
+    {% for category, message in messages %}
+        {% if category == 'cart' %}
+            <li>{{ message }} <button class="checkout">Checkout</button></li>
+        {% else %}
+            <li class="{{ category }}">{{ message }}</li>
+        {% endif %}
+    {% endfor %}
+    </ul>
+  {% endif %}
+{%- endwith %}
+

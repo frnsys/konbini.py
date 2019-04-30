@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>unbag - shop</title>
+  <title>{{ config.TITLE }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/16.png') }}" sizes="16x16" />
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/32.png') }}" sizes="32x32" />
@@ -12,10 +12,42 @@
 </head>
 <body>
     {% include "_messages.html" %}
+    <header>
+        <div class="header--meta">
+            <a href="{{ url_for('main.products') }}"><img src="{{ url_for('static', filename='logo.svg') }}" alt="logo" title="logo" class="header--brand"></a>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('main.products') }}">Products</a></li>
+                <li><a href="{{ url_for('main.plans') }}">Subscriptions</a></li>
+
+                {% set cart_size = session['cart'].values()|sum %}
+                <li><a href="{{ url_for('main.cart') }}">Cart{% if cart_size > 0 %} ({{ cart_size }}){% endif %}</a></li>
+            </ul>
+        </nav>
+    </header>
+
     <main>
         {% block content %}
         {% endblock %}
     </main>
+    <script src="https://checkout.stripe.com/checkout.js"></script>
+    <script>
+        var handler = StripeCheckout.configure({
+            key: '{{ config.STRIPE_PUBLIC_KEY }}',
+            name: 'TESTING',
+            locale: 'auto',
+            description: 'TESTING',
+            alipay: true,
+            token: function(token, args) {
+                var amount = parseInt($('[name=amount]').val());
+                $('<form action="/donate" method="post">\
+                    <input value="'+amount+'" name="amount">\
+                    <input value="'+token.email+'" name="email">\
+                    <input value="'+token.id+'" name="token">\
+                    </form>').appendTo(document.body).submit();
+            }
+        });
+    </script>
 </body>
 </html>
-

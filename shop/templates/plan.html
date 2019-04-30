@@ -3,25 +3,24 @@
 {% block content %}
 <div class="product">
     <div class="product--gallery">
-        {% for img in images %}
-            <figure>
-                <img src="{{ img }}" />
-            </figure>
-        {% endfor %}
+        <figure>
+            <img src="{{ product.metadata.image }}" />
+        </figure>
     </div>
+
     <div class="product--info">
         <h1>{{ product.name }}</h1>
-        <p>{{ product.description }}</p>
+        <p>{{ product.metadata.description }}</p>
         <div class="product--skus">
-            {% for sku in skus %}
+            {% for plan in plans %}
                 <div class="product--sku">
                     <form action='{{ url_for('main.cart') }}' method='POST'>
-                        <input type='hidden' name='sku' value={{ sku.id }}>
-                        <input type='hidden' name='name' value='{{ product.name }} - {{ sku.attributes.values()|join(', ') }}'>
+                        <input type='hidden' name='sku' value={{ plan.id }}>
+                        <input type='hidden' name='name' value='{{ product.name }} - {{ plan.nickname }}'>
                         <div class="sku">
                             <div>
-                                <div>{{ sku.attributes.values()|join(', ') }}</div>
-                                <div class="sku--price">{{ '${:,.2f}'.format(sku.price/100) }}</div>
+                                <div>{{ plan.nickname }}</div>
+                                <div class="sku--price">{{ '${:,.2f}'.format(plan.amount/100) }}/{{ plan.interval }}</div>
                             </div>
                             <input type="submit" value='Add to Cart'>
                         </div>
@@ -32,3 +31,4 @@
     </div>
 </div>
 {% endblock %}
+

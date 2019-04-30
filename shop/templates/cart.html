@@ -1,0 +1,36 @@
+{% extends 'layout.html' %}
+
+{% macro set_quantity(icon, sku, quantity) %}
+    <form class="cart--update-quantity" action="{{ url_for('main.update_cart') }}" method="POST">
+        <input type='hidden' name='sku' value={{ sku }}>
+        <input type='hidden' name='quantity' value={{ quantity }}>
+        <input type="submit" value={{ icon }}>
+    </form>
+{% endmacro %}
+
+{% block content %}
+<div class="cart">
+    <h2>Cart</h2>
+    <table>
+        <tbody>
+            {% for id, quantity in session['cart'].items() %}
+                <tr>
+                    <td>{{ session['meta'][id]['name'] }}</td>
+                    <td class='cart--update-quantity-symbol'>{{ set_quantity('➖', id, quantity-1) }}</td>
+                    <td class='cart--quantity'>{{ quantity }}</td>
+                    <td class='cart--update-quantity-symbol'>{{ set_quantity('➕', id, quantity+1) }}</td>
+                    <td>{{ '${:,.2f}'.format(session['meta'][id]['price']/100 * quantity) }} {{ set_quantity('🗑', id, 0) }}</td>
+                </tr>
+            {% endfor %}
+            <tr>
+                <td>Subtotal</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>{{ '${:,.2f}'.format(subtotal/100) }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <button class="checkout">Checkout</button>
+</div>
+{% endblock %}
