@@ -2,20 +2,9 @@
 
 A very simple storefront (no tracking, no user accounts, etc), basically a lightweight frontend for Stripe (goods/products and services/subscriptions) that integrates with EasyPost for shipping management and Mailgun for transactional emails.
 
-Stripe's backend manages:
-- products
-- subscription plans
-- tax settings
-- shipping settings
-- webhook configuration
-    - in particular, setup a webhook for `checkout.session.completed`
-
-EasyPost's backend manages:
-- carriers
+# Setup
 
 For development, you'll need `ngrok` or something similar to expose the local web application for webhooks.
-
-# Setup
 
 ## Stripe
 
