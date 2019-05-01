@@ -1,6 +1,6 @@
 import config
-import shippo
 import stripe
+import easypost
 from flask_mail import Message
 from .forms import CheckoutForm
 from urllib.parse import urlparse, urljoin
@@ -203,36 +203,18 @@ def checkout_completed_hook():
             if order['status'] != 'created':
                 return '', 200
 
+            # print(session)
+            # print(order)
+
             customer_id = session['customer']
             customer = stripe.Customer.retrieve(customer_id)
             customer_email = customer['email']
 
-            # For now, assuming only one shipping method
-            # order['selected_shipping_method']
-
-            addr = order['shipping']['address']
-            address_to = {
-                'name': order['shipping']['name'],
-                'city': addr['city'],
-                'country': addr['country'],
-                'street1': addr['line1'],
-                'street2': addr['line2'],
-                'state': addr['state'],
-                'zip': addr['postal_code']
-            }
-
             # Create shipping label
-            # <https://goshippo.com/docs/shipping-labels/#instalabel>
-            # tx = shippo.Transaction.create(
-            #     shipment={
-            #         'address_from': config.SHIP_FROM_ADDRESS,
-            #         'address_to': address_to,
-            #         # 'parcels': [parcel] # TODO?
-            #     },
-            #     # TODO
-            #     carrier_account='b741b99f95e841639b54272834bc478c',
-            #     servicelevel_token='usps_priority'
-            # )
+            shipment = easypost.Shipment.retrieve(order.id)
+            rate = next(r for r in shipment.rates if r['id'] == order.selected_shipping_method)
+            shipment.buy(rate=rate)
+            # print(shipment)
 
             items = [{
                 'amount': i['amount'],
@@ -241,13 +223,11 @@ def checkout_completed_hook():
             } for i in session['display_items']] + order['items'][2:]
 
             # Notify fulfillment person
-            # label_url = tx['label_url']
-            label_url = 'testing'
+            label_url = shipment.postage_label.label_url
             send_email(config.NEW_ORDER_RECIPIENT, 'New order placed', 'new_order', order=order, items=items, label_url=label_url)
 
             # Notify customer
-            # tracking_url = tx['tracking_url_provider']
-            tracking_url = 'testing'
+            tracking_url = shipment.tracker.public_url
             send_email(customer_email, 'Thank you for your order', 'complete_order', order=order, items=items, tracking_url=tracking_url)
 
     return '', 200

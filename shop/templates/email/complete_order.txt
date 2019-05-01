@@ -8,3 +8,5 @@ Order #{{ order.id }}
     {{ '${:,.2f}'.format(item.amount/100) }}
 {% endfor %}
 Total: {{ '${:,.2f}'.format(order.amount/100) }}
+
+Track your package: {{ tracking_url }}

@@ -3,4 +3,4 @@ Flask-WTF==0.14.2
 Flask-Mail==0.9.1
 stripe==2.27.0
 sentry-sdk==0.6.9
-shippo==1.6.2
+easypost==3.6.3
