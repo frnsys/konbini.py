@@ -8,7 +8,7 @@ from flask import Blueprint, render_template, redirect, request, session, abort,
 
 bp = Blueprint('main', __name__)
 
-def send_email(to, subject, template, reply_to=None, bcc=None, **kwargs):
+def send_email(to, subject, template, reply_to=config.MAIL_REPLY_TO, bcc=None, **kwargs):
     msg = Message(subject,
                 body=render_template('email/{}.txt'.format(template), **kwargs),
                 html=render_template('email/{}.html'.format(template), **kwargs),

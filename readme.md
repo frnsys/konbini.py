@@ -23,3 +23,7 @@ In the Stripe dashboard:
 Get your [EasyPost API key](https://www.easypost.com/account/api-keys) and add it to `config.py`.
 
 - In Stripe, go to [`Settings > Orders`](https://dashboard.stripe.com/account/relay/settings). For Live mode (and for development, Test mode), change shipping to `Provider > EasyPost` and paste in the API key (production key for Live mode, and test key for Test mode).
+
+# Themes
+
+You can specify your own theme for the shop by setting `TEMPLATE_FOLDER` in `config.py`. It should be an absolute path to a folder of Jinja templates. Copy `shop/templates` and edit those files.
