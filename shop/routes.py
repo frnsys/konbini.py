@@ -4,7 +4,7 @@ import easypost
 from flask_mail import Message
 from .forms import CheckoutForm
 from urllib.parse import urlparse, urljoin
-from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app
+from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
 
 bp = Blueprint('main', __name__)
 
