@@ -261,7 +261,8 @@ def subscribe():
 
 @bp.route('/checkout/tax', methods=['POST'])
 def tax():
-    order = request.get_json()
+    data = request.get_json()
+    order = data['order']
 
     addr = order['shipping']['address']
     tax = None
