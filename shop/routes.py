@@ -1,3 +1,4 @@
+import math
 import config
 import stripe
 import easypost
@@ -277,7 +278,7 @@ def tax():
                 'parent': None,
                 'type': 'tax',
                 'description': 'Sales taxes',
-                'amount': order['amount'] * tax['amount'],
+                'amount': math.ceil(order['amount'] * tax['amount']),
                 'currency': 'usd'
             }]
         }
