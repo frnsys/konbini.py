@@ -9,7 +9,7 @@ setup(
     author_email='f@frnsys.com',
     license='GPLv3',
 
-    packages=['konbini'],
+    packages=['konbini', 'flask_konbini'],
     install_requires=[
         'Flask==1.0.2',
         'Flask-WTF==0.14.2',
