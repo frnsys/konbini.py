@@ -14,15 +14,15 @@
     {% include "_messages.html" %}
     <header>
         <div class="header--meta">
-            <a href="{{ url_for('main.products') }}"><img src="{{ url_for('static', filename='logo.svg') }}" alt="logo" title="logo" class="header--brand"></a>
+            <a href="{{ url_for('shop.products') }}"><img src="{{ url_for('static', filename='logo.svg') }}" alt="logo" title="logo" class="header--brand"></a>
         </div>
         <nav>
             <ul>
-                <li><a href="{{ url_for('main.products') }}">Products</a></li>
-                <li><a href="{{ url_for('main.plans') }}">Subscriptions</a></li>
+                <li><a href="{{ url_for('shop.products') }}">Products</a></li>
+                <li><a href="{{ url_for('shop.plans') }}">Subscriptions</a></li>
 
                 {% set cart_size = session.get('cart', {}).values()|sum %}
-                <li><a href="{{ url_for('main.cart') }}">Cart{% if cart_size > 0 %} ({{ cart_size }}){% endif %}</a></li>
+                <li><a href="{{ url_for('shop.cart') }}">Cart{% if cart_size > 0 %} ({{ cart_size }}){% endif %}</a></li>
             </ul>
         </nav>
     </header>

@@ -14,7 +14,7 @@
         <div class="product--skus">
             {% for plan in plans %}
                 <div class="product--sku">
-                    <form action='{{ url_for('main.subscribe') }}' method='POST'>
+                    <form action='{{ url_for('shop.subscribe') }}' method='POST'>
                         <input type='hidden' name='id' value={{ plan.id }}>
                         <input type='hidden' name='name' value='{{ product.name }} - {{ plan.nickname }}'>
                         <input type='hidden' name='price' value='{{ '${:,.2f}'.format(plan.amount/100) }}/{{ plan.interval }}'>

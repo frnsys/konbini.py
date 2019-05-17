@@ -9,13 +9,13 @@
         {% for p in products %}
             <li class="item">
                 <figure>
-                    <a href="{{ url_for('main.product', id=p.id[5:]) }}">
+                    <a href="{{ url_for('shop.product', id=p.id[5:]) }}">
                         <img src="{{ p.images[0] }}" class="thumb" />
                     </a>
                 </figure>
                 <div class="justify-vertical">
                     <h2>
-                        <a href="{{ url_for('main.product', id=p.id[5:]) }}">
+                        <a href="{{ url_for('shop.product', id=p.id[5:]) }}">
                             {{ p.name }}
                         </a>
                     </h2>
