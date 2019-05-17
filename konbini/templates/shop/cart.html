@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% macro set_quantity(icon, sku, name, quantity) %}
-    <form class="cart--update-quantity" action="{{ url_for('main.cart') }}" method="POST">
+    <form class="cart--update-quantity" action="{{ url_for('shop.cart') }}" method="POST">
         <input type='hidden' name='sku' value={{ sku }}>
         <input type='hidden' name='name' value={{ name }}>
         <input type='hidden' name='quantity' value={{ quantity }}>
@@ -34,7 +34,7 @@
                 </tr>
             </tbody>
         </table>
-        <a href="{{ url_for('main.checkout') }}" class="go-checkout">Checkout</a>
+        <a href="{{ url_for('shop.checkout') }}" class="go-checkout">Checkout</a>
     {% else %}
         <h2>Your cart is empty.</h2>
     {% endif %}

@@ -4,7 +4,7 @@ import easypost
 import sentry_sdk
 from flask import Flask
 from flask_mail import Mail
-from .routes import bp as main_bp
+from .routes import bp as shop_bp
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 stripe.api_key = config.STRIPE_SECRET_KEY
@@ -21,7 +21,7 @@ def create_app(package_name=__name__, static_folder='static', template_folder='t
     app.config.update(config_overrides)
 
     app.mail = Mail(app)
-    app.register_blueprint(main_bp)
+    app.register_blueprint(shop_bp)
 
     if not app.debug:
         sentry_sdk.init(

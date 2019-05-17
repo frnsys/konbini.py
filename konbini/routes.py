@@ -1,5 +1,4 @@
 import math
-import config
 import stripe
 import easypost
 from flask_mail import Message
@@ -7,16 +6,18 @@ from .forms import CheckoutForm
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
 
-bp = Blueprint('main', __name__)
+bp = Blueprint('shop', __name__, template_folder='templates')
 
-def send_email(to, subject, template, reply_to=config.MAIL_REPLY_TO, bcc=None, **kwargs):
+def send_email(to, subject, template, reply_to=None, bcc=None, **kwargs):
+    reply_to = reply_to or current_app.config['MAIL_REPLY_TO']
     msg = Message(subject,
-                body=render_template('email/{}.txt'.format(template), **kwargs),
-                html=render_template('email/{}.html'.format(template), **kwargs),
+                body=render_template('shop/email/{}.txt'.format(template), **kwargs),
+                html=render_template('shop/email/{}.html'.format(template), **kwargs),
                 recipients=[to],
                 reply_to=reply_to,
                 bcc=bcc)
-    current_app.mail.send(msg)
+    mail = current_app.extensions.get('mail')
+    mail.send(msg)
 
 def is_in_stock(sku):
     inv = sku['inventory']
@@ -32,15 +33,22 @@ def is_safe_url(target):
     return test_url.scheme in ('http', 'https') and \
            ref_url.netloc == test_url.netloc
 
-
 @bp.route('/')
+def index():
+    products = stripe.Product.list(limit=100, active=True, type='good')['data']
+    plans = stripe.Product.list(limit=100, active=True, type='service')['data']
+    if request.args.get('format') == 'json':
+        return jsonify(products=products, plans=plans)
+    else:
+        return render_template('shop/index.html', products=products, plans=plans)
+
 @bp.route('/products')
 def products():
     products = stripe.Product.list(limit=100, active=True, type='good')['data']
     if request.args.get('format') == 'json':
         return jsonify(results=products)
     else:
-        return render_template('products.html', products=products)
+        return render_template('shop/products.html', products=products)
 
 @bp.route('/product/<id>')
 def product(id):
@@ -54,7 +62,7 @@ def product(id):
     if request.args.get('format') == 'json':
         return jsonify(product=product, skus=skus, images=images)
     else:
-        return render_template('product.html', product=product, skus=skus, images=images)
+        return render_template('shop/product.html', product=product, skus=skus, images=images)
 
 @bp.route('/plans')
 def plans():
@@ -62,7 +70,7 @@ def plans():
     if request.args.get('format') == 'json':
         return jsonify(results=plans)
     else:
-        return render_template('plans.html', plans=plans)
+        return render_template('shop/plans.html', plans=plans)
 
 @bp.route('/plans/<id>')
 def plan(id):
@@ -73,13 +81,13 @@ def plan(id):
     if request.args.get('format') == 'json':
         return jsonify(product=product, plans=plans)
     else:
-        return render_template('plan.html', product=product, plans=plans)
+        return render_template('shop/plan.html', product=product, plans=plans)
 
 @bp.route('/cart', methods=['GET', 'POST'])
 def cart():
     if request.method == 'GET':
         subtotal = sum((session['meta'][id]['price'] * q for id, q in session.get('cart', {}).items()), 0)
-        return render_template('cart.html', subtotal=subtotal)
+        return render_template('shop/cart.html', subtotal=subtotal)
 
     name = request.form['name']
     sku_id = request.form['sku']
@@ -128,12 +136,12 @@ def cart():
 
     if is_safe_url(request.referrer):
         return redirect(request.referrer)
-    return redirect(url_for('main.products'))
+    return redirect(url_for('shop.products'))
 
 @bp.route('/checkout', methods=['GET', 'POST'])
 def checkout():
     if not session.get('cart'):
-        return redirect(url_for('main.products'))
+        return redirect(url_for('shop.products'))
 
     form = CheckoutForm()
     if form.validate_on_submit():
@@ -151,13 +159,13 @@ def checkout():
                 'address': {k: form.data['address'][k] for k in
                     ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
             })
-        return redirect(url_for('main.pay'))
-    return render_template('checkout.html', form=form)
+        return redirect(url_for('shop.pay'))
+    return render_template('shop/checkout.html', form=form)
 
 @bp.route('/checkout/pay')
 def pay():
     if not session.get('order'):
-        return redirect(url_for('main.cart'))
+        return redirect(url_for('shop.cart'))
 
     session['stripe'] = stripe.checkout.Session.create(
         client_reference_id=session['order']['id'],
@@ -168,15 +176,15 @@ def pay():
             'currency': 'usd',
             'quantity': quantity,
         } for sku_id, quantity in session['cart'].items()],
-        success_url=url_for('main.checkout_success', _external=True),
-        cancel_url=url_for('main.checkout_cancel', _external=True))
-    return render_template('pay.html')
+        success_url=url_for('shop.checkout_success', _external=True),
+        cancel_url=url_for('shop.checkout_cancel', _external=True))
+    return render_template('shop/pay.html')
 
 @bp.route('/checkout/success')
 def checkout_success():
     for k in ['cart', 'plan', 'stripe', 'order']:
         if k in session: del session[k]
-    return render_template('thanks.html')
+    return render_template('shop/thanks.html')
 
 @bp.route('/checkout/cancel')
 def checkout_cancel():
@@ -190,7 +198,7 @@ def checkout_completed_hook():
 
     try:
         event = stripe.Webhook.construct_event(
-            payload, sig_header, config.STRIPE_WEBHOOK_SECRET
+            payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRET']
         )
     except ValueError:
         # Invalid payload
@@ -238,7 +246,9 @@ def checkout_completed_hook():
 
             # Notify fulfillment person
             label_url = shipment.postage_label.label_url
-            send_email(config.NEW_ORDER_RECIPIENT, 'New order placed', 'new_order', order=order, items=items, label_url=label_url)
+            send_email(current_app.config['NEW_ORDER_RECIPIENT'],
+                       'New order placed', 'new_order',
+                       order=order, items=items, label_url=label_url)
 
             # Notify customer
             tracking_url = shipment.tracker.public_url
@@ -259,7 +269,7 @@ def subscribe():
         }
 
     if not session['plan']:
-        return redirect(url_for('main.plans'))
+        return redirect(url_for('shop.plans'))
 
     session['stripe'] = stripe.checkout.Session.create(
         payment_method_types=['card'],
@@ -268,9 +278,9 @@ def subscribe():
                 'plan':  session['plan']['plan_id']
             }]
         },
-        success_url=url_for('main.checkout_success', _external=True),
-        cancel_url=url_for('main.checkout_cancel', _external=True))
-    return render_template('subscribe.html', **session['plan'])
+        success_url=url_for('shop.checkout_success', _external=True),
+        cancel_url=url_for('shop.checkout_cancel', _external=True))
+    return render_template('shop/subscribe.html', **session['plan'])
 
 
 @bp.route('/checkout/tax', methods=['POST'])
@@ -280,7 +290,7 @@ def tax():
 
     addr = order['shipping']['address']
     tax = None
-    for t in config.TAXES:
+    for t in current_app.config['TAXES']:
         if all(addr[k] == v for k, v in t['address'].items()):
             tax = t
             break
