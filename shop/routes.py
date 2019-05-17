@@ -266,7 +266,7 @@ def tax():
 
     addr = order['shipping']['address']
     tax = None
-    for t in config.tax:
+    for t in config.TAXES:
         if all(addr[k] == v for k, v in t['address'].items()):
             tax = t
             break
