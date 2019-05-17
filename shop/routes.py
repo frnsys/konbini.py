@@ -34,9 +34,13 @@ def is_safe_url(target):
 
 
 @bp.route('/')
+@bp.route('/products')
 def products():
     products = stripe.Product.list(limit=100, active=True, type='good')['data']
-    return render_template('products.html', products=products)
+    if request.args.get('format') == 'json':
+        return jsonify(results=products)
+    else:
+        return render_template('products.html', products=products)
 
 @bp.route('/product/<id>')
 def product(id):
@@ -47,12 +51,18 @@ def product(id):
     images = set(product.images + [s.image for s in skus])
     for sku in skus:
         sku['in_stock'] = is_in_stock(sku)
-    return render_template('product.html', product=product, skus=skus, images=images)
+    if request.args.get('format') == 'json':
+        return jsonify(product=product, skus=skus, images=images)
+    else:
+        return render_template('product.html', product=product, skus=skus, images=images)
 
 @bp.route('/plans')
 def plans():
     plans = stripe.Product.list(limit=100, active=True, type='service')['data']
-    return render_template('plans.html', plans=plans)
+    if request.args.get('format') == 'json':
+        return jsonify(results=plans)
+    else:
+        return render_template('plans.html', plans=plans)
 
 @bp.route('/plans/<id>')
 def plan(id):
@@ -60,7 +70,10 @@ def plan(id):
     product = stripe.Product.retrieve(id)
     if product is None or not product.active: abort(404)
     plans = stripe.Plan.list(limit=100, product=id, active=True)['data']
-    return render_template('plan.html', product=product, plans=plans)
+    if request.args.get('format') == 'json':
+        return jsonify(product=product, plans=plans)
+    else:
+        return render_template('plan.html', product=product, plans=plans)
 
 @bp.route('/cart', methods=['GET', 'POST'])
 def cart():
