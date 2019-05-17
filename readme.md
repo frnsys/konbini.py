@@ -90,8 +90,8 @@ This isn't yet published to pypi, so install with:
 To use as a Flask extension:
 
 ```
-from konbini import Konbini
 from flask_mail import Mail
+from flask_konbini import Konbini
 
 # Setup your app...
 
