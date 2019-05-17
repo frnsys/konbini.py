@@ -41,6 +41,7 @@ EASYPOST_API_KEY = 'EZ...'
 
 In `config.py` you should also specify tax conditions, e.g.:
 
+```
 TAXES = [{
     'address': {
         'state': 'NY',
@@ -48,6 +49,7 @@ TAXES = [{
     },
     'amount': 0.08875
 }]
+```
 
 When a checkout occurs, the tax amount will be computed using the first matching tax.
 
