@@ -1,10 +1,11 @@
+import math
 import config
 import stripe
 import easypost
 from flask_mail import Message
 from .forms import CheckoutForm
 from urllib.parse import urlparse, urljoin
-from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app
+from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
 
 bp = Blueprint('main', __name__)
 
@@ -257,3 +258,31 @@ def subscribe():
         success_url=url_for('main.checkout_success', _external=True),
         cancel_url=url_for('main.checkout_cancel', _external=True))
     return render_template('subscribe.html', **session['plan'])
+
+
+@bp.route('/checkout/tax', methods=['POST'])
+def tax():
+    data = request.get_json()
+    order = data['order']
+
+    addr = order['shipping']['address']
+    tax = None
+    for t in config.TAXES:
+        if all(addr[k] == v for k, v in t['address'].items()):
+            tax = t
+            break
+
+    if tax is not None:
+        order_update = {
+            'items': [{
+                'parent': None,
+                'type': 'tax',
+                'description': 'Sales taxes',
+                'amount': math.ceil(order['amount'] * tax['amount']),
+                'currency': 'usd'
+            }]
+        }
+    else:
+        order_update = {'items': []}
+
+    return jsonify(order_update=order_update)
