@@ -1,6 +1,7 @@
 import math
 import stripe
 import easypost
+from . import core
 from flask_mail import Message
 from .forms import CheckoutForm
 from urllib.parse import urlparse, urljoin
@@ -35,8 +36,8 @@ def is_safe_url(target):
 
 @bp.route('/')
 def index():
-    products = stripe.Product.list(limit=100, active=True, type='good')['data']
-    plans = stripe.Product.list(limit=100, active=True, type='service')['data']
+    products = core.get_products()
+    plans = core.get_plans()
     if request.args.get('format') == 'json':
         return jsonify(products=products, plans=plans)
     else:
@@ -44,7 +45,7 @@ def index():
 
 @bp.route('/products')
 def products():
-    products = stripe.Product.list(limit=100, active=True, type='good')['data']
+    products = core.get_products()
     if request.args.get('format') == 'json':
         return jsonify(results=products)
     else:
@@ -66,7 +67,7 @@ def product(id):
 
 @bp.route('/plans')
 def plans():
-    plans = stripe.Product.list(limit=100, active=True, type='service')['data']
+    plans = core.get_plans()
     if request.args.get('format') == 'json':
         return jsonify(results=plans)
     else:

@@ -1,5 +1,6 @@
 import stripe
 import easypost
+from konbini import core
 from konbini.routes import bp
 
 class Konbini:
@@ -15,3 +16,6 @@ class Konbini:
         easypost.api_key = app.config['EASYPOST_API_KEY']
 
         app.register_blueprint(bp, url_prefix='/shop')
+
+        self.app.get_products = core.get_products
+        self.app.get_plans = core.get_plans
