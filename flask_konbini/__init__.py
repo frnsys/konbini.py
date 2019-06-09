@@ -15,7 +15,8 @@ class Konbini:
         stripe.api_key = app.config['STRIPE_SECRET_KEY']
         easypost.api_key = app.config['EASYPOST_API_KEY']
 
-        app.register_blueprint(bp, url_prefix='/shop')
+        url_prefix = app.config.get('KONBINI_URL_PREFIX', '/shop')
+        app.register_blueprint(bp, url_prefix=url_prefix)
 
         self.app.get_products = core.get_products
         self.app.get_plans = core.get_plans
