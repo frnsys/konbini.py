@@ -57,7 +57,7 @@ def product(id):
     product = stripe.Product.retrieve(id)
     if product is None or not product.active: abort(404)
     skus = stripe.SKU.list(limit=100, product=id, active=True)['data']
-    images = set(product.images + [s.image for s in skus])
+    images = product.images + [s.image for s in skus]
     for sku in skus:
         sku['in_stock'] = is_in_stock(sku)
     if request.args.get('format') == 'json':
