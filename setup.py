@@ -8,7 +8,7 @@ setup(
     author='Francis Tseng',
     author_email='f@frnsys.com',
     license='GPLv3',
-
+    include_package_data=True,
     packages=['konbini', 'flask_konbini'],
     install_requires=[
         'Flask==1.0.2',

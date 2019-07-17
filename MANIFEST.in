@@ -1,0 +1,3 @@
+recursive-include konbini/static *.*
+recursive-include konbini/templates *.*
+
