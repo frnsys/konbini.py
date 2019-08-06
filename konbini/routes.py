@@ -137,12 +137,14 @@ def cart():
 
     if is_safe_url(request.referrer):
         return redirect(request.referrer)
-    return redirect(url_for('shop.products'))
+    return redirect(url_for('shop.index'))
 
 @bp.route('/checkout', methods=['GET', 'POST'])
 def checkout():
+    form = CheckoutForm()
+    return render_template('shop/checkout.html', form=form)
     if not session.get('cart'):
-        return redirect(url_for('shop.products'))
+        return redirect(url_for('shop.index'))
 
     form = CheckoutForm()
     if form.validate_on_submit():
