@@ -52,6 +52,8 @@ main {
 .cart, .checkout {
   max-width: 480px;
   margin: 0 auto;
+  background: #fff;
+  padding: 1em;
 }
 .cart table, .checkout table {
   font-size: 0.9em;
@@ -86,6 +88,7 @@ main {
   padding: 0;
   display: inline;
   cursor: pointer;
+  background: none;
 }
 
 .checkout .form-field {
