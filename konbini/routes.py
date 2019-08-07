@@ -141,8 +141,6 @@ def cart():
 
 @bp.route('/checkout', methods=['GET', 'POST'])
 def checkout():
-    form = CheckoutForm()
-    return render_template('shop/checkout.html', form=form)
     if not session.get('cart'):
         return redirect(url_for('shop.index'))
 
