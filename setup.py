@@ -17,6 +17,7 @@ setup(
         'stripe==2.27.0',
         'sentry-sdk==0.6.9',
         'easypost==3.6.3',
-        'six==1.12.0'
+        'six==1.12.0',
+        'pyusps==0.0.7'
     ]
 )
