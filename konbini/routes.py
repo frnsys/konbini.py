@@ -189,7 +189,7 @@ def checkout():
         if address is None:
             return render_template('shop/checkout.html', form=form, invalid_address=True)
         address['country'] = SHIPPING_COUNTRY
-        session['order'] = stripe.Order.create(
+        order = stripe.Order.create(
             currency='usd',
             items=[{
                 'type': 'sku',
@@ -202,6 +202,13 @@ def checkout():
                 'name': form.data['name'],
                 'address': address
             })
+
+        # Choose the cheapest shipping option
+        cheapest_shipping = min(order['shipping_methods'], key=lambda sm: sm['amount'])
+        session['order'] = stripe.Order.modify(
+            order['id'],
+            selected_shipping_method=cheapest_shipping['id']
+        )
         return redirect(url_for('shop.pay', address_changed=True))
     return render_template('shop/checkout.html', form=form)
 
@@ -222,6 +229,7 @@ def pay():
         } for sku_id, quantity in session['cart'].items()],
         success_url=url_for('shop.checkout_success', _external=True),
         cancel_url=url_for('shop.checkout_cancel', _external=True))
+
     return render_template('shop/pay.html', address_changed=address_changed)
 
 @bp.route('/checkout/success')
