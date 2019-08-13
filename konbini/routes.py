@@ -4,8 +4,21 @@ import easypost
 from . import core
 from flask_mail import Message
 from .forms import CheckoutForm
+from pyusps import address_information
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
+
+# Only supporting domestic (US) shipping;
+# incorporating international shipping is
+# too complicated at this point
+SHIPPING_COUNTRY = 'US'
+USPS_ADDRESS_KEYS = {
+    'address': 'line1',
+    'address_extended': 'line2',
+    'state': 'state',
+    'city': 'city',
+    'zip5': 'postal_code'
+}
 
 bp = Blueprint('shop', __name__, template_folder='templates')
 
@@ -33,6 +46,29 @@ def is_safe_url(target):
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and \
            ref_url.netloc == test_url.netloc
+
+def normalize_address(address):
+    """Normalize a domestic (US) address"""
+    addr = {
+        'zip_code': address['postal_code'],
+        'state': address['state'],
+        'city': address['city'],
+        'address': address['line1']
+    }
+    line2 = address.get('line2')
+    if line2:
+        addr['address_extended'] = line2
+    try:
+        usps_addr = address_information.verify(current_app.config['USPS_USER_ID'], addr)
+        norm_addr = {}
+        changed = False
+        for k_frm, k_to in USPS_ADDRESS_KEYS.items():
+            norm_addr[k_to] = usps_addr.get(k_frm)
+            if (norm_addr[k_to] or '').lower() != (address[k_to] or '').lower():
+                changed = True
+        return norm_addr, changed
+    except ValueError:
+        return None, True
 
 @bp.route('/')
 def index():
@@ -146,6 +182,13 @@ def checkout():
 
     form = CheckoutForm()
     if form.validate_on_submit():
+        address = {k: form.data['address'][k] for k in
+                   ['line1', 'line2', 'city', 'state', 'postal_code']}
+                   # ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
+        address, changed = normalize_address(address)
+        if address is None:
+            return render_template('shop/checkout.html', form=form, invalid_address=True)
+        address['country'] = SHIPPING_COUNTRY
         session['order'] = stripe.Order.create(
             currency='usd',
             items=[{
@@ -157,10 +200,9 @@ def checkout():
             } for sku_id, quantity in session['cart'].items()],
             shipping={
                 'name': form.data['name'],
-                'address': {k: form.data['address'][k] for k in
-                    ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
+                'address': address
             })
-        return redirect(url_for('shop.pay'))
+        return redirect(url_for('shop.pay', address_changed=True))
     return render_template('shop/checkout.html', form=form)
 
 @bp.route('/checkout/pay')
@@ -168,6 +210,7 @@ def pay():
     if not session.get('order'):
         return redirect(url_for('shop.cart'))
 
+    address_changed = request.args.get('address_changed')
     session['stripe'] = stripe.checkout.Session.create(
         client_reference_id=session['order']['id'],
         payment_method_types=['card'],
@@ -179,7 +222,7 @@ def pay():
         } for sku_id, quantity in session['cart'].items()],
         success_url=url_for('shop.checkout_success', _external=True),
         cancel_url=url_for('shop.checkout_cancel', _external=True))
-    return render_template('shop/pay.html')
+    return render_template('shop/pay.html', address_changed=address_changed)
 
 @bp.route('/checkout/success')
 def checkout_success():
@@ -301,7 +344,7 @@ def tax():
             'items': [{
                 'parent': None,
                 'type': 'tax',
-                'description': 'Sales taxes',
+                'description': 'Sales tax',
                 'amount': math.ceil(order['amount'] * tax['amount']),
                 'currency': 'usd'
             }]
