@@ -2,6 +2,8 @@
 
 A very simple storefront (no tracking, no user accounts, etc), basically a lightweight frontend for Stripe (goods/products and services/subscriptions) that integrates with EasyPost for shipping management and Mailgun for transactional emails.
 
+Currently `konbini` only supports domestic (US) shipping.
+
 # Setup
 
 __This setup is necessary for using Konbini as either a standalone app or as a Flask extension.__
@@ -54,6 +56,13 @@ TAXES = [{
 When a checkout occurs, the tax amount will be computed using the first matching tax.
 
 Stripe does provide integrations with paid tax calculation services which are probably better if your situation is more complex.
+
+## USPS Address verification (US only)
+
+`konbini` uses USPS's address verification service to normalize (US) addresses.
+
+- Register to use USPS's web tools here: <https://registration.shippingapis.com/>
+- USPS will email you a user ID, add that to `config.py` as `USPS_USER_ID`
 
 ## Additional configuration
 

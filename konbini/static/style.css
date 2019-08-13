@@ -100,11 +100,15 @@ main {
 .checkout .form-field input {
   width: 100%;
 }
-.checkout .column-2 {
+.checkout .column-2,
+.checkout .column-3 {
   display: flex;
 }
 .checkout .column-2 .form-field {
   flex-basis: 50%;
+}
+.checkout .column-3 .form-field {
+  flex-basis: 33%;
 }
 .checkout .column-2 .form-field:first-child {
   padding-right: 1em;
@@ -124,6 +128,12 @@ main {
   cursor: pointer;
   padding: 0.5em;
   box-shadow: 2px 2px 0 0 black;
+}
+.checkout--warning,
+.checkout--error {
+  color: #fd3304;
+  font-weight: bold;
+  margin: 0 0 1em 0;
 }
 
 .grid {

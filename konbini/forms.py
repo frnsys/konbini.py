@@ -10,7 +10,7 @@ class AddressForm(FlaskForm):
     line2 = TextField('Address 2')
     city = TextField('City', [InputRequired()])
     state = TextField('State', [InputRequired()])
-    country = TextField('Country', [InputRequired()])
+    # country = TextField('Country', [InputRequired()])
     postal_code = TextField('Zipcode', [InputRequired()])
 
 class CheckoutForm(FlaskForm):

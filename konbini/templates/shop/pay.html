@@ -23,6 +23,9 @@
         </table>
     </div>
     <h4>Shipping to</h4>
+    {% if address_changed %}
+        <div class="checkout--warning">Your address was normalized to the one below. Please check that it's correct.</div>
+    {% endif %}
     <div>
         <div>{{ session.order.shipping.name }}</div>
         <div>{{ session.order.shipping.address.line1 }}</div>
