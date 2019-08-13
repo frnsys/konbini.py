@@ -79,9 +79,7 @@ Setup as you would any other Flask app. To try it out, you can run `app.py`.
 
 ## Themes
 
-You can specify your own theme for the shop by setting `TEMPLATE_FOLDER` in `config.py`. It should be an absolute path to a folder of Jinja templates. Copy `shop/templates` and edit those files.
-
-For static files such as CSS, place them in `TEMPLATE_FOLDER/static`.
+You can override the templates for `konbini` by creating templates in your app's `templates/shop` folder.
 
 # As a Flask Extension
 
