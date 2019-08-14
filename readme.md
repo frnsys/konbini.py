@@ -37,7 +37,7 @@ Get your [EasyPost API key](https://www.easypost.com/account/api-keys) and add i
 EASYPOST_API_KEY = 'EZ...'
 ```
 
-- In Stripe, go to [`Settings > Orders`](https://dashboard.stripe.com/account/relay/settings). For Live mode (and for development, Test mode), change shipping to `Provider > EasyPost` and paste in the API key (production key for Live mode, and test key for Test mode).
+- In Stripe, go to [`Settings > Orders`](https://dashboard.stripe.com/account/relay/settings). For Live mode (and for development, Test mode), change `Shipping` to `Provider > EasyPost` and paste in the API key (production key for Live mode, and test key for Test mode).
 
 ## Taxes
 
@@ -54,6 +54,8 @@ TAXES = [{
 ```
 
 When a checkout occurs, the tax amount will be computed using the first matching tax.
+
+In Stripe, go to [`Settings > Orders`](https://dashboard.stripe.com/account/relay/settings). For Live mode (and for development, Test mode), change `Taxes` to `Callback` and in the `Callback` field add `https://yoursite/shop/checkout/tax` (change `shop` as needed to your `KONBINI_URL_PREFIX`).
 
 Stripe does provide integrations with paid tax calculation services which are probably better if your situation is more complex.
 
