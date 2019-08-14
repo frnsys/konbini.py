@@ -12,6 +12,22 @@
             </tr>
         </tbody>
     </table>
+
+    {% if shipped %}
+        <h4>Shipping to</h4>
+        {% if address_changed %}
+            <div class="checkout--warning">Your address was normalized to the one below. Please check that it's correct.</div>
+        {% endif %}
+        <div>
+            <div>{{ address.name }}</div>
+            <div>{{ address.line1 }}</div>
+            {% if address.line2 %}
+                <div>{{ address.line2 }}</div>
+            {% endif %}
+            <div>{{ address.city }}, {{ address.state }}</div>
+            <div>{{ address.country }}, {{ address.postal_code }}</div>
+        </div>
+    {% endif %}
     <button id="js-pay">Pay</button>
 </div>
 {% include "shop/_stripe.html" %}

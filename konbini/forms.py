@@ -13,6 +13,6 @@ class AddressForm(FlaskForm):
     # country = TextField('Country', [InputRequired()])
     postal_code = TextField('Zipcode', [InputRequired()])
 
-class CheckoutForm(FlaskForm):
+class ShippingForm(FlaskForm):
     name = TextField('Name', [InputRequired()])
     address = FormField(AddressForm)

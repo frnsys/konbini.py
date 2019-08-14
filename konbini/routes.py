@@ -3,7 +3,7 @@ import stripe
 import easypost
 from . import core
 from flask_mail import Message
-from .forms import CheckoutForm
+from .forms import ShippingForm
 from pyusps import address_information
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
@@ -180,14 +180,14 @@ def checkout():
     if not session.get('cart'):
         return redirect(url_for('shop.index'))
 
-    form = CheckoutForm()
+    form = ShippingForm()
     if form.validate_on_submit():
         address = {k: form.data['address'][k] for k in
                    ['line1', 'line2', 'city', 'state', 'postal_code']}
                    # ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
         address, changed = normalize_address(address)
         if address is None:
-            return render_template('shop/checkout.html', form=form, invalid_address=True)
+            return render_template('shop/shipping.html', form=form, invalid_address=True)
         address['country'] = SHIPPING_COUNTRY
         order = stripe.Order.create(
             currency='usd',
@@ -210,7 +210,7 @@ def checkout():
             selected_shipping_method=cheapest_shipping['id']
         )
         return redirect(url_for('shop.pay', address_changed=True))
-    return render_template('shop/checkout.html', form=form)
+    return render_template('shop/shipping.html', form=form)
 
 @bp.route('/checkout/pay')
 def pay():
@@ -314,25 +314,67 @@ def subscribe():
         name = request.form['name']
         price = request.form['price']
         plan_id = request.form['id']
+
+        try:
+            plan = stripe.Plan.retrieve(plan_id)
+        except stripe.error.InvalidRequestError:
+            return redirect(url_for('shop.plans'))
+        product = stripe.Product.retrieve(plan.product)
+
+        shipped = product.metadata.get('shipped') == 'true'
         session['plan'] = {
             'name': name,
             'price': price,
-            'plan_id': plan_id
+            'plan_id': plan_id,
+            'shipped': shipped
         }
 
     if not session['plan']:
         return redirect(url_for('shop.plans'))
+
+    # If the session requires shipping info,
+    # ensure that the address has been set
+    if session['plan'] and session['plan'].get('shipped') \
+            and not session['plan'].get('address'):
+        return redirect(url_for('shop.subscribe_address'))
 
     session['stripe'] = stripe.checkout.Session.create(
         payment_method_types=['card'],
         subscription_data={
             'items': [{
                 'plan':  session['plan']['plan_id']
-            }]
+            }],
+            'metadata': session['plan'].get('address')
         },
         success_url=url_for('shop.checkout_success', _external=True),
         cancel_url=url_for('shop.checkout_cancel', _external=True))
-    return render_template('shop/subscribe.html', **session['plan'])
+
+    address_changed = request.args.get('address_changed')
+    return render_template('shop/subscribe.html', address_changed=address_changed, **session['plan'])
+
+@bp.route('/subscribe/address', methods=['GET', 'POST'])
+def subscribe_address():
+    if not session['plan']:
+        return redirect(url_for('shop.plans'))
+
+    form = ShippingForm()
+    if form.validate_on_submit():
+        address = {k: form.data['address'][k] for k in
+                   ['line1', 'line2', 'city', 'state', 'postal_code']}
+                   # ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
+        address, changed = normalize_address(address)
+        if address is None:
+            return render_template('shop/shipping.html', form=form, invalid_address=True)
+        address['country'] = SHIPPING_COUNTRY
+        address['name'] = form.data['name']
+
+        # So the session update property persists
+        plan = session['plan']
+        plan['address'] = address
+        session['plan'] = plan
+
+        return redirect(url_for('shop.subscribe', address_changed=True))
+    return render_template('shop/shipping.html', form=form)
 
 
 @bp.route('/checkout/tax', methods=['POST'])

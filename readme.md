@@ -23,6 +23,7 @@ In the Stripe dashboard:
 - Add products and SKUs (`Orders > Products`)
     - When adding products, __make sure package dimensions and weights are set for each SKU to compute shipping costs__. Otherwise they will be ignored.
 - Add subscription products and plans (`Billing > Products`)
+    - Note that if a subscription product requires shipping information, add a metadata field called `shipped` and set its value to `true`.
 - For automatically generating shipping labels and sending order confirmation emails, setup `checkout.session.completed` webhook (`Developers > Webhooks`), pointing to your `/checkout/completed` endpoint, e.g. `https://konbi.ni/checkout/completed`. You'll get a webhook secret, add it to `config.py`, e.g.:
 
 ```
