@@ -204,11 +204,12 @@ def checkout():
             })
 
         # Choose the cheapest shipping option
-        cheapest_shipping = min(order['shipping_methods'], key=lambda sm: sm['amount'])
-        session['order'] = stripe.Order.modify(
-            order['id'],
-            selected_shipping_method=cheapest_shipping['id']
-        )
+        if order['shipping_methods']:
+            cheapest_shipping = min(order['shipping_methods'], key=lambda sm: sm['amount'])
+            session['order'] = stripe.Order.modify(
+                order['id'],
+                selected_shipping_method=cheapest_shipping['id']
+            )
         return redirect(url_for('shop.pay', address_changed=True))
     return render_template('shop/shipping.html', form=form)
 
