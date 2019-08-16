@@ -72,8 +72,14 @@ Stripe does provide integrations with paid tax calculation services which are pr
 In `config.py`:
 
 ```
+# Your shop name
+SHOP_NAME = 'Foo'
+
 # What email gets notified when new orders are placed
-NEW_ORDER_RECEIPIENT = 'foo@foo.com'
+NEW_ORDER_RECIPIENT = 'foo@foo.com'
+
+# The email sender
+MAIL_REPLY_TO = 'foo@foo.com'
 
 # Config for Flask-Mail
 MAIL_SERVER = '...'

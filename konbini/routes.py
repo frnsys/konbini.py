@@ -223,11 +223,11 @@ def pay():
         client_reference_id=session['order']['id'],
         payment_method_types=['card'],
         line_items=[{
-            'name': session['meta'][sku_id]['name'],
-            'amount': session['meta'][sku_id]['price'],
-            'currency': 'usd',
-            'quantity': quantity,
-        } for sku_id, quantity in session['cart'].items()],
+            'name': item['description'],
+            'amount': item['amount'],
+            'currency': item['currency'],
+            'quantity': item['quantity'] or 1,
+        } for item in session['order']['items']],
         success_url=url_for('shop.checkout_success', _external=True),
         cancel_url=url_for('shop.checkout_cancel', _external=True))
 
@@ -278,6 +278,9 @@ def checkout_completed_hook():
             if order['status'] != 'created':
                 return '', 200
 
+            # Associate payment id with this order
+            stripe.Order.modify(order_id, metadata={'payment': session['payment_intent']})
+
             # print(session)
             # print(order)
 
@@ -294,8 +297,8 @@ def checkout_completed_hook():
             items = [{
                 'amount': i['amount'],
                 'quantity': i['quantity'],
-                'description': i['custom']['name']
-            } for i in session['display_items']] + order['items'][2:]
+                'description': i['description']
+            } for i in  order['items']]
 
             # Notify fulfillment person
             label_url = shipment.postage_label.label_url
