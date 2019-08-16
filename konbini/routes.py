@@ -247,18 +247,9 @@ def checkout_cancel():
 def checkout_completed_hook():
     payload = request.data
     sig_header = request.headers['Stripe-Signature']
-    event = None
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRET']
-        )
-    except ValueError:
-        # Invalid payload
-        return abort(400)
-    except stripe.error.SignatureVerificationError:
-        # Invalid signature
-        return abort(400)
+    event = stripe.Webhook.construct_event(
+        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRET']
+    )
 
     # Handle the checkout.session.completed event
     if event['type'] == 'checkout.session.completed':
