@@ -243,12 +243,37 @@ def checkout_success():
 def checkout_cancel():
     return 'cancelled' # TODO
 
+@bp.route('/subscribe/bill', methods=['POST'])
+def subscribe_invoice_hook():
+    payload = request.data
+    sig_header = request.headers['Stripe-Signature']
+    event = stripe.Webhook.construct_event(
+        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRETS']['invoice.created']
+    )
+
+    if event['type'] == 'invoice.created':
+        invoice = event['data']['object']
+        addr = invoice['customer_shipping']
+        cus_id = invoice['customer']
+        if addr:
+            # Check for applicable tax rates
+            tax_rates = stripe.TaxRate.list(limit=10)
+            app_tax = None
+            for tax in tax_rates:
+                if tax['jurisdiction'] == addr['state']:
+                    app_tax = tax
+                    break
+            if app_tax is not None:
+                stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
+    return '', 200
+
+
 @bp.route('/checkout/completed', methods=['POST'])
 def checkout_completed_hook():
     payload = request.data
     sig_header = request.headers['Stripe-Signature']
     event = stripe.Webhook.construct_event(
-        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRET']
+        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRET']['checkout.session.completed']
     )
 
     # Handle the checkout.session.completed event
@@ -259,6 +284,14 @@ def checkout_completed_hook():
         # assume that this is a checkout
         # for a subscription only
         if session['subscription'] is not None:
+            sub_id = session['subscription']
+            cus_id = session['customer']
+            sub = stripe.Subscription.retrieve(sub_id)
+            meta = sub.metadata
+            if meta:
+                name = meta.pop('name')
+                addr = meta
+                stripe.Customer.modify(cus_id, name=name, shipping={'name': name, 'address': addr})
             return '', 200
 
         else:
@@ -300,8 +333,8 @@ def checkout_completed_hook():
             # Notify customer
             tracking_url = shipment.tracker.public_url
             send_email(customer_email, 'Thank you for your order', 'complete_order', order=order, items=items, tracking_url=tracking_url)
-
     return '', 200
+
 
 @bp.route('/subscribe', methods=['GET', 'POST'])
 def subscribe():
@@ -346,6 +379,7 @@ def subscribe():
 
     address_changed = request.args.get('address_changed')
     return render_template('shop/subscribe.html', address_changed=address_changed, **session['plan'])
+
 
 @bp.route('/subscribe/address', methods=['GET', 'POST'])
 def subscribe_address():

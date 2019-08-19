@@ -24,10 +24,17 @@ In the Stripe dashboard:
     - When adding products, __make sure package dimensions and weights are set for each SKU to compute shipping costs__. Otherwise they will be ignored.
 - Add subscription products and plans (`Billing > Products`)
     - Note that if a subscription product requires shipping information, add a metadata field called `shipped` and set its value to `true`.
-- For automatically generating shipping labels and sending order confirmation emails, setup `checkout.session.completed` webhook (`Developers > Webhooks`), pointing to your `/checkout/completed` endpoint, e.g. `https://konbi.ni/checkout/completed`. You'll get a webhook secret, add it to `config.py`, e.g.:
+- Add tax rates (used for subscriptions) (`Billing > Tax Rates`). These match the customer shipping address `state` field to the tax rate's `Region` value. E.g. if you want to set an NY sales tax, set tax rate `Region` to `NY`, and whenever a subscription shipping address has `NY` for the `state` field, the tax will be applied to each invoice.
+- Setup webhooks (`Developers > Webhooks`)
+    - For automatically generating shipping labels and sending order confirmation emails, setup a `checkout.session.completed` webhook, pointing to your `/checkout/completed` endpoint, e.g. `https://konbi.ni/shop/checkout/completed`.
+    - For automatically adding taxes to subscriptions, setup a `invoice.created` webhook, pointing to your `/subscribe/bill` endpoint, e.g. `https://konbi.ni/shop/subscribe/bill`.
+    - For each of these you'll get a webhook secret, add them to `config.py` like so:
 
 ```
-STRIPE_WEBHOOK_SECRET = 'whsec_...'
+STRIPE_WEBHOOK_SECRETS = {
+    'checkout.session.completed': 'whsec_...',
+    'invoice.created': 'whsec_...'
+}
 ```
 
 ## EasyPost
@@ -54,7 +61,7 @@ TAXES = [{
 }]
 ```
 
-When a checkout occurs, the tax amount will be computed using the first matching tax.
+When a product (non-subscription) checkout occurs, the tax amount will be computed using the first matching tax. For subscriptions, see the Stripe setup above.
 
 In Stripe, go to [`Settings > Orders`](https://dashboard.stripe.com/account/relay/settings). For Live mode (and for development, Test mode), change `Taxes` to `Callback` and in the `Callback` field add `https://yoursite/shop/checkout/tax` (change `shop` as needed to your `KONBINI_URL_PREFIX`).
 
@@ -124,3 +131,7 @@ This sets Konbini up at `/shop`.
 ## Themes
 
 When using as an extension, templates can be overridden by adding new templates to `templates/shop` in your Flask application. Their filenames should match what you see in `konbini/templates/shop` in this repo.
+
+## Customer management
+
+`konbini` is very simple and doesn't provide any customer management tools. If you need to update shipping addresses, issue refunds, etc, please do so through the Stripe dashboard.
