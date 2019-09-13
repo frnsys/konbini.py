@@ -306,8 +306,13 @@ def checkout_completed_hook():
             if order['status'] != 'created':
                 return '', 200
 
+            # Already paid
+            if order['metadata'].get('payment') != None:
+                return '', 200
+
             # Associate payment id with this order
-            stripe.Order.modify(order_id, metadata={'payment': session['payment_intent']})
+            stripe.Order.modify(order_id,
+                                metadata={'payment': session['payment_intent']})
 
             # print(session)
             # print(order)
