@@ -93,7 +93,7 @@ def product(id):
     try:
         product = stripe.Product.retrieve(id)
     except stripe.error.InvalidRequestError as err:
-        app.logger.error(str(err))
+        current_app.logger.error(str(err))
         abort(404)
     if product is None or not product.active: abort(404)
     skus = stripe.SKU.list(limit=100, product=id, active=True)['data']
