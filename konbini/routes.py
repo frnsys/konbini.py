@@ -90,7 +90,11 @@ def products():
 @bp.route('/product/<id>')
 def product(id):
     id = 'prod_{}'.format(id)
-    product = stripe.Product.retrieve(id)
+    try:
+        product = stripe.Product.retrieve(id)
+    except stripe.error.InvalidRequestError as err:
+        app.logger.error(str(err))
+        abort(404)
     if product is None or not product.active: abort(404)
     skus = stripe.SKU.list(limit=100, product=id, active=True)['data']
     images = product.images + [s.image for s in skus if s.image and s.image not in product.images]
@@ -273,7 +277,7 @@ def checkout_completed_hook():
     payload = request.data
     sig_header = request.headers['Stripe-Signature']
     event = stripe.Webhook.construct_event(
-        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRET']['checkout.session.completed']
+        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRETS']['checkout.session.completed']
     )
 
     # Handle the checkout.session.completed event
