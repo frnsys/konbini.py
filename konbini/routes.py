@@ -160,14 +160,17 @@ def cart():
             sku = stripe.SKU.retrieve(sku_id)
             price = sku.price
             interval = None
+            interval_count = None
         elif sku_id.startswith('plan_'):
             sku = stripe.Plan.retrieve(sku_id)
             price = sku.amount
             interval = sku.interval
+            interval_count = sku.interval_count
         session['meta'][sku_id] = {
             'name': name,
             'price': price,
-            'interval': interval
+            'interval': interval,
+            'interval_count': interval_count
         }
 
     if added:

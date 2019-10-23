@@ -17,11 +17,11 @@
                     <form action='{{ url_for('shop.subscribe') }}' method='POST'>
                         <input type='hidden' name='id' value={{ plan.id }}>
                         <input type='hidden' name='name' value='{{ product.name }} - {{ plan.nickname }}'>
-                        <input type='hidden' name='price' value='{{ '${:,.2f}'.format(plan.amount/100) }}/{{ plan.interval }}'>
+                        <input type='hidden' name='price' value='{{ '${:,.2f}'.format(plan.amount/100) }}/{% if plan.interval_count > 1 %}{{ plan.interval_count }} {% endif %}{{ plan.interval }}{% if plan.interval_count > 1 %}s{% endif %}'>
                         <div class="sku">
                             <div>
                                 <div>{{ plan.nickname }}</div>
-                                <div class="sku--price">{{ '${:,.2f}'.format(plan.amount/100) }}/{{ plan.interval }}</div>
+                                <div class="sku--price">{{ '${:,.2f}'.format(plan.amount/100) }}/{% if plan.interval_count > 1 %}{{ plan.interval_count }} {% endif %}{{ plan.interval }}{% if plan.interval_count > 1 %}s{% endif %}</div>
                             </div>
                             <input type="submit" value='Subscribe'>
                         </div>
