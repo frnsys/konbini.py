@@ -302,10 +302,10 @@ def checkout_completed_hook():
 
             send_email(current_app.config['NEW_ORDER_RECIPIENT'],
                        'New subscription', 'new_subscription',
-                       subscription=subscription)
+                       subscription=sub)
 
             # Notify customer
-            send_email(customer_email, 'Thank you for your subscription', 'complete_subscription', subscription=subscription)
+            send_email(customer_email, 'Thank you for your subscription', 'complete_subscription', subscription=sub)
             return '', 200
 
         else:
