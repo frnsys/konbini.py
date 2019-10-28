@@ -1,6 +1,6 @@
 Thank you for your order.
 
-Order #{{ order.id }}
+Order #{{ order.id[3:] }}
 
 {% for item in items %}
 {{ item.description }}

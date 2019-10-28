@@ -1,6 +1,6 @@
 A new subscription
 
-Subscription #{{ subscription.id }}
+Subscription #{{ subscription.id[4:] }}
 
 {% for item in subscription['items']['data'] %}
 {{ item.plan.nickname }}
