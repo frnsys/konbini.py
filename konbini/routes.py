@@ -305,6 +305,8 @@ def checkout_completed_hook():
                        subscription=sub)
 
             # Notify customer
+            customer = stripe.Customer.retrieve(cus_id)
+            customer_email = customer['email']
             send_email(customer_email, 'Thank you for your subscription', 'complete_subscription', subscription=sub)
             return '', 200
 
