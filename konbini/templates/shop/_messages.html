@@ -2,7 +2,7 @@
     <ul class="flashes" id="flashes">
     {% for category, message in messages %}
         {% if category == 'cart' %}
-            <li>{{ message }} <a href="{{ url_for('shop.checkout') }}" class="go-checkout">Checkout</a></li>
+            <li>{{ message }} <a href="{{ url_for('shop.checkout') }}" class="go-checkout">Check Out</a></li>
         {% else %}
             <li class="{{ category }}">{{ message }}</li>
         {% endif %}
