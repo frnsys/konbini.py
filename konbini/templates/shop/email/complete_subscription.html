@@ -7,7 +7,7 @@
 <div>
   <div style="margin-top:20px;margin-bottom:10px;font-weight:bold;">Subscription #{{ subscription.id[3:] }}</div>
   <table style="width:100%;">
-      {% for item in subscription.items %}
+      {% for item in subscription['items']['data'] %}
         <tr>
             <td>{{ item.plan.nickname }}</td>
             <td style="text-align:right;">{{ '${:,.2f}'.format(item.plan.amount/100) }}/{% if item.plan.interval_count > 1 %}{{ item.plan.interval_count }} {% endif %}{{ item.plan.interval }}{% if item.plan.interval_count > 1 %}s{% endif %}</td>
