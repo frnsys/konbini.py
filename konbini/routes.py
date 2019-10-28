@@ -299,6 +299,13 @@ def checkout_completed_hook():
                 name = meta.pop('name')
                 addr = meta
                 stripe.Customer.modify(cus_id, name=name, shipping={'name': name, 'address': addr})
+
+            send_email(current_app.config['NEW_ORDER_RECIPIENT'],
+                       'New subscription', 'new_subscription',
+                       subscription=subscription)
+
+            # Notify customer
+            send_email(customer_email, 'Thank you for your subscription', 'complete_subscription', subscription=subscription)
             return '', 200
 
         else:

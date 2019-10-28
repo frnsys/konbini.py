@@ -1,0 +1,8 @@
+Thank you for your subscription..
+
+Subscription #{{ subscription.id }}
+
+{% for item in subscription.items %}
+{{ item.plan.nickname }}
+    {{ '${:,.2f}'.format(item.plan.amount/100) }}/{% if item.plan.interval_count > 1 %}{{ item.plan.interval_count }} {% endif %}{{ item.plan.interval }}{% if item.plan.interval_count > 1 %}s{% endif %}
+{% endfor %}
