@@ -17,12 +17,11 @@
         <div class="column-3">
             {{ render_field_with_errors(form.address.city) }}
             {{ render_field_with_errors(form.address.state) }}
+        </div>
+        <div class="column-2">
+            {{ render_field_with_errors(form.address.country) }}
             {{ render_field_with_errors(form.address.postal_code) }}
         </div>
-        <!-- <div class="column-2"> -->
-            {# render_field_with_errors(form.address.country) #}
-            {# render_field_with_errors(form.address.postal_code) #}
-        <!-- </div> -->
         <div class="actions">
             <input type="submit" value="Save Address">
         </div>

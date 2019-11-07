@@ -345,6 +345,7 @@ def checkout_completed_hook():
         if session['subscription'] is not None:
             sub_id = session['subscription']
             cus_id = session['customer']
+            line_items = session['line_items']
             sub = stripe.Subscription.retrieve(sub_id)
             meta = sub.metadata
             if meta:
@@ -354,12 +355,13 @@ def checkout_completed_hook():
 
             send_email(current_app.config['NEW_ORDER_RECIPIENT'],
                        'New subscription', 'new_subscription',
-                       subscription=sub)
+                       subscription=sub, line_items=line_items)
 
             # Notify customer
             customer = stripe.Customer.retrieve(cus_id)
             customer_email = customer['email']
-            send_email(customer_email, 'Thank you for your subscription', 'complete_subscription', subscription=sub)
+            send_email(customer_email, 'Thank you for your subscription', 'complete_subscription',
+                       subscription=sub, line_items=line_items)
             return '', 200
 
         else:
