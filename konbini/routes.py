@@ -425,6 +425,7 @@ def subscribe():
         shipped = product.metadata.get('shipped') == 'true'
         session['plan'] = {
             'name': name,
+            'amount': plan.amount,
             'price': price,
             'prod_id': product.id,
             'plan_id': plan_id,
@@ -468,7 +469,7 @@ def subscribe():
                 line_items.append({
                     'name': 'Tax',
                     'description': 'Tax',
-                    'amount': (tax.percentage/100) * session['plan']['price'],
+                    'amount': (tax.percentage/100) * session['plan']['amount'],
                     'currency': 'usd',
                     'quantity': 1
                 })
