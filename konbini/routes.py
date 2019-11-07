@@ -266,6 +266,11 @@ def subscribe_invoice_hook():
 
         if prod['metadata']['shipped'] == 'true':
             addr = cus['shipping']
+            if addr is None:
+                addr = {
+                    'name': sub['metadata']['name'],
+                    'address': sub['metadata']
+                }
 
             # Check for applicable tax rates
             tax_rates = stripe.TaxRate.list(limit=10)
