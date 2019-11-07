@@ -450,6 +450,8 @@ def subscribe():
 
         if current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
             prod_id = session['plan']['prod_id']
+            plan_prod = stripe.Product.retrieve(prod_id)
+            prod_id = plan_prod['metadata']['shipped_product_id']
             product = stripe.Product.retrieve(prod_id)
             rate = get_shipping_rate(product, addr)
             line_items.append({
