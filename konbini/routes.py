@@ -441,7 +441,7 @@ def subscribe():
         return redirect(url_for('shop.subscribe_address'))
 
     line_items = []
-    if session['plan'].get('shipped') == 'true':
+    if session['plan'].get('shipped'):
         addr = session['plan']['address']
         if current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
             prod_id = session['plan']['prod_id']
