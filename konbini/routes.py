@@ -272,6 +272,42 @@ def subscribe_invoice_hook():
                     break
             if app_tax is not None:
                 stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
+
+            if current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
+                # Calculate shipping estimate
+                # customs_info = easypost.CustomsInfo.create(...)
+
+                sub = stripe.Subscription.retrieve(invoice['subscription'])
+                prod_id = sub['plan']['metadata']['shipped_product_id']
+                product = stripe.Product.retrieve(prod_id)
+
+                shipment = easypost.Shipment.create(
+                    from_address=current_app.config['KONBINI_SHIPPING_FROM'],
+                    to_address={
+                        'name': addr['name'],
+                        'street1': addr['shipping']['line1'],
+                        'street2': addr['shipping']['line2'],
+                        'city': addr['shipping']['city'],
+                        'state': addr['shipping']['state'],
+                        'zip': addr['shipping']['postal_code'],
+                        'country': addr['shipping']['country']
+                    },
+                    parcel=product.package_dimensions,
+                    # customs_info=customs_info
+                )
+
+                # Get cheapest rate
+                rate = min(shipment.rates, key=lambda r: float(r.rate))
+
+                # Add the item to this invoice
+                stripe.InvoiceItem.create(
+                    invoice=invoice['id'],
+                    customer=cus_id,
+                    amount=float(rate*100), # convert to cents
+                    currency='usd',
+                    description='Shipping',
+                )
+
     return '', 200
 
 

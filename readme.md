@@ -25,6 +25,7 @@ In the Stripe dashboard:
     - When adding products, __make sure package dimensions and weights are set for each SKU to compute shipping costs__. Otherwise they will be ignored.
 - Add subscription products and plans (`Billing > Products`)
     - Note that if a subscription product requires shipping information, add a metadata field called `shipped` and set its value to `true`. **Also note that this does _not_ automatically generate shipping labels; this assumes you have your own process for shipping out subscription items.**
+        - You can, however set `KONBINI_INVOICE_SUB_SHIPPING = True` to add shipping costs when a subscription payment is invoiced. This still does not create the label, though. **If you use this, you must set `KONBINI_SHIPPING_FROM` (see below) and your subscription product metadata must also have a field called `shipped_product_id` set to the product id to be shipped. This product must have package dimensions and weight defined.**
 - Add tax rates (used for subscriptions) (`Billing > Tax Rates`). These match the customer shipping address `state` field to the tax rate's `Region` value. E.g. if you want to set an NY sales tax, set tax rate `Region` to `NY`, and whenever a subscription shipping address has `NY` for the `state` field, the tax will be applied to each invoice.
 - Setup webhooks (`Developers > Webhooks`)
     - For automatically generating shipping labels and sending order confirmation emails, setup a `checkout.session.completed` webhook, pointing to your `/checkout/completed` endpoint, e.g. `https://konbi.ni/shop/checkout/completed`.
@@ -97,6 +98,20 @@ MAIL_PORT = 587
 MAIL_USE_TLS = True
 MAIL_DEFAULT_SENDER = '...'
 MAIL_REPLY_TO = '...'
+
+# Shipping from address
+# Note this looks redundant to the shipping setting in Stripe;
+# Stripe does not provide API access to that setting so it's repeated here
+# for subscription shipping (see above).
+KONBINI_SHIPPING_FROM = {
+    'name': '...',
+    'street1': '...',
+    'street2': '...',
+    'city': '...',
+    'state': '...',
+    'zip': '...',
+    'country': '...'
+}
 ```
 
 # As a Standalone App
