@@ -260,17 +260,18 @@ def subscribe_invoice_hook():
 
     if event['type'] == 'invoice.created':
         invoice = event['data']['object']
-        cus_id = invoice['customer']
+        cus = stripe.Customer.retrieve(invoice['customer'])
         sub = stripe.Subscription.retrieve(invoice['subscription'])
+        prod = stripe.Product.retrieve(sub['plan']['product'])
 
-        if sub['plan']['metadata']['shipped']:
-            addr = sub['metadata']
+        if prod['metadata']['shipped'] == 'true':
+            addr = cus['shipping']
 
             # Check for applicable tax rates
             tax_rates = stripe.TaxRate.list(limit=10)
             app_tax = None
             for tax in tax_rates:
-                if tax['jurisdiction'] == addr['state']:
+                if tax['jurisdiction'] == addr['address']['state']:
                     app_tax = tax
                     break
             if app_tax is not None:
@@ -280,19 +281,19 @@ def subscribe_invoice_hook():
                 # Calculate shipping estimate
                 # customs_info = easypost.CustomsInfo.create(...)
 
-                prod_id = sub['plan']['metadata']['shipped_product_id']
+                prod_id = prod['metadata']['shipped_product_id']
                 product = stripe.Product.retrieve(prod_id)
 
                 shipment = easypost.Shipment.create(
                     from_address=current_app.config['KONBINI_SHIPPING_FROM'],
                     to_address={
                         'name': addr['name'],
-                        'street1': addr['line1'],
-                        'street2': addr['line2'],
-                        'city': addr['city'],
-                        'state': addr['state'],
-                        'zip': addr['postal_code'],
-                        'country': addr['country']
+                        'street1': addr['address']['line1'],
+                        'street2': addr['address']['line2'],
+                        'city': addr['address']['city'],
+                        'state': addr['address']['state'],
+                        'zip': addr['address']['postal_code'],
+                        'country': addr['address']['country']
                     },
                     parcel=product.package_dimensions,
                     # customs_info=customs_info
@@ -304,7 +305,7 @@ def subscribe_invoice_hook():
                 # Add the item to this invoice
                 stripe.InvoiceItem.create(
                     invoice=invoice['id'],
-                    customer=cus_id,
+                    customer=cus['id'],
                     amount=float(rate*100), # convert to cents
                     currency='usd',
                     description='Shipping',
