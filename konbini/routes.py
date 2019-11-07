@@ -305,13 +305,13 @@ def subscribe_invoice_hook():
                 )
 
                 # Get cheapest rate
-                rate = min(shipment.rates, key=lambda r: float(r.rate))
+                rate = min(float(r.rate) for r in shipment.rates)
 
                 # Add the item to this invoice
                 stripe.InvoiceItem.create(
                     invoice=invoice['id'],
                     customer=cus['id'],
-                    amount=float(rate*100), # convert to cents
+                    amount=rate*100, # convert to cents
                     currency='usd',
                     description='Shipping',
                 )
