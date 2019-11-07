@@ -441,30 +441,30 @@ def subscribe():
         return redirect(url_for('shop.subscribe_address'))
 
     line_items = []
-    if session['plan'].get('shipped') == 'true' and current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
+    if session['plan'].get('shipped') == 'true':
         addr = session['plan']['address']
-        prod_id = session['plan']['prod_id']
-        product = stripe.Product.retrieve(prod_id)
-        rate = get_shipping_rate(product, addr)
-        line_items.append({
-            'name': 'Shipping',
-            'description': 'Shipping',
-            'amount': rate,
-            'currency': 'usd',
-            'quantity': 1
-        })
-
-    tax_rates = stripe.TaxRate.list(limit=10)
-    for tax in tax_rates:
-        if tax['jurisdiction'] == addr['address']['state']:
+        if current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
+            prod_id = session['plan']['prod_id']
+            product = stripe.Product.retrieve(prod_id)
+            rate = get_shipping_rate(product, addr)
             line_items.append({
-                'name': 'Tax',
-                'description': 'Tax',
-                'amount': (tax.percentage/100) * session['plan']['price'],
+                'name': 'Shipping',
+                'description': 'Shipping',
+                'amount': rate,
                 'currency': 'usd',
                 'quantity': 1
             })
-            break
+
+        tax_rates = stripe.TaxRate.list(limit=10)
+        for tax in tax_rates:
+            if tax['jurisdiction'] == addr['address']['state']:
+                line_items.append({
+                    'name': 'Tax',
+                    'description': 'Tax',
+                    'amount': (tax.percentage/100) * session['plan']['price'],
+                    'currency': 'usd',
+                    'quantity': 1
+                })
 
     session['stripe'] = stripe.checkout.Session.create(
         payment_method_types=['card'],
