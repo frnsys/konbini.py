@@ -294,7 +294,7 @@ def subscribe_invoice_hook():
                     to_address={
                         'name': addr['name'],
                         'street1': addr['address']['line1'],
-                        'street2': addr['address']['line2'],
+                        'street2': addr['address'].get('line2'),
                         'city': addr['address']['city'],
                         'state': addr['address']['state'],
                         'zip': addr['address']['postal_code'],
