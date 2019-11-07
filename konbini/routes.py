@@ -8,10 +8,6 @@ from pyusps import address_information
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
 
-# Only supporting domestic (US) shipping;
-# incorporating international shipping is
-# too complicated at this point
-SHIPPING_COUNTRY = 'US'
 USPS_ADDRESS_KEYS = {
     'address': 'line1',
     'address_extended': 'line2',
@@ -73,6 +69,9 @@ def is_safe_url(target):
 
 def normalize_address(address):
     """Normalize a domestic (US) address"""
+    if address['country'] != 'US':
+        return address, False
+
     addr = {
         'zip_code': address['postal_code'],
         'state': address['state'],
@@ -90,6 +89,7 @@ def normalize_address(address):
             norm_addr[k_to] = usps_addr.get(k_frm)
             if (norm_addr[k_to] or '').lower() != (address[k_to] or '').lower():
                 changed = True
+        norm_addr['country'] = 'US'
         return norm_addr, changed
     except ValueError:
         return None, True
@@ -214,12 +214,10 @@ def checkout():
     form = ShippingForm()
     if form.validate_on_submit():
         address = {k: form.data['address'][k] for k in
-                   ['line1', 'line2', 'city', 'state', 'postal_code']}
-                   # ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
+                   ['line1', 'line2', 'city', 'state', 'postal_code', 'country']}
         address, changed = normalize_address(address)
         if address is None:
             return render_template('shop/shipping.html', form=form, invalid_address=True)
-        address['country'] = SHIPPING_COUNTRY
         order = stripe.Order.create(
             currency='usd',
             items=[{
@@ -500,12 +498,10 @@ def subscribe_address():
     form = ShippingForm()
     if form.validate_on_submit():
         address = {k: form.data['address'][k] for k in
-                   ['line1', 'line2', 'city', 'state', 'postal_code']}
-                   # ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
+                   ['line1', 'line2', 'city', 'state', 'postal_code', 'country']}
         address, changed = normalize_address(address)
         if address is None:
             return render_template('shop/shipping.html', form=form, invalid_address=True)
-        address['country'] = SHIPPING_COUNTRY
         address['name'] = form.data['name']
 
         # So the session update property persists
