@@ -443,6 +443,11 @@ def subscribe():
     line_items = []
     if session['plan'].get('shipped'):
         addr = session['plan']['address']
+        addr = {
+            'name': addr['name'],
+            'address': addr
+        }
+
         if current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
             prod_id = session['plan']['prod_id']
             product = stripe.Product.retrieve(prod_id)
