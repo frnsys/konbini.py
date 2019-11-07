@@ -311,7 +311,7 @@ def subscribe_invoice_hook():
                 stripe.InvoiceItem.create(
                     invoice=invoice['id'],
                     customer=cus['id'],
-                    amount=rate*100, # convert to cents
+                    amount=math.ceil(rate*100), # convert to cents
                     currency='usd',
                     description='Shipping',
                 )
