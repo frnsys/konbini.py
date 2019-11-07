@@ -29,13 +29,13 @@ In the Stripe dashboard:
 - Add tax rates (used for subscriptions) (`Billing > Tax Rates`). These match the customer shipping address `state` field to the tax rate's `Region` value. E.g. if you want to set an NY sales tax, set tax rate `Region` to `NY`, and whenever a subscription shipping address has `NY` for the `state` field, the tax will be applied to each invoice.
 - Setup webhooks (`Developers > Webhooks`)
     - For automatically generating shipping labels and sending order confirmation emails, setup a `checkout.session.completed` webhook, pointing to your `/checkout/completed` endpoint, e.g. `https://konbi.ni/shop/checkout/completed`.
-    - For automatically adding taxes to subscriptions, setup a `invoice.created` webhook, pointing to your `/subscribe/bill` endpoint, e.g. `https://konbi.ni/shop/subscribe/bill`.
+    - For automatically adding taxes to subscriptions, setup a `invoice.upcoming` webhook, pointing to your `/subscribe/bill` endpoint, e.g. `https://konbi.ni/shop/subscribe/bill`.
     - For each of these you'll get a webhook secret, add them to `config.py` like so:
 
 ```
 STRIPE_WEBHOOK_SECRETS = {
     'checkout.session.completed': 'whsec_...',
-    'invoice.created': 'whsec_...'
+    'invoice.upcoming': 'whsec_...'
 }
 ```
 

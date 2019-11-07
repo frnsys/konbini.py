@@ -22,6 +22,30 @@ USPS_ADDRESS_KEYS = {
 
 bp = Blueprint('shop', __name__, template_folder='templates')
 
+
+def get_shipping_rate(product, addr):
+    shipment = easypost.Shipment.create(
+        from_address=current_app.config['KONBINI_SHIPPING_FROM'],
+        to_address={
+            'name': addr['name'],
+            'street1': addr['address']['line1'],
+            'street2': addr['address'].get('line2'),
+            'city': addr['address']['city'],
+            'state': addr['address']['state'],
+            'zip': addr['address']['postal_code'],
+            'country': addr['address']['country']
+        },
+        parcel=product.package_dimensions,
+        # customs_info=customs_info
+    )
+
+    # Get cheapest rate
+    rate = min(float(r.rate) for r in shipment.rates)
+
+    # Convert to cents
+    return math.ceil(rate*100)
+
+
 def send_email(to, subject, template, reply_to=None, bcc=None, **kwargs):
     reply_to = reply_to or current_app.config['MAIL_REPLY_TO']
     msg = Message(subject,
@@ -255,16 +279,17 @@ def subscribe_invoice_hook():
     payload = request.data
     sig_header = request.headers['Stripe-Signature']
     event = stripe.Webhook.construct_event(
-        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRETS']['invoice.created']
+        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRETS']['invoice.upcoming']
     )
 
-    if event['type'] == 'invoice.created':
+    if event['type'] == 'invoice.upcoming':
         invoice = event['data']['object']
+
         cus = stripe.Customer.retrieve(invoice['customer'])
         sub = stripe.Subscription.retrieve(invoice['subscription'])
         prod = stripe.Product.retrieve(sub['plan']['product'])
 
-        if prod['metadata']['shipped'] == 'true':
+        if prod['metadata'].get('shipped') == 'true':
             addr = cus['shipping']
             if addr is None:
                 addr = {
@@ -288,30 +313,13 @@ def subscribe_invoice_hook():
 
                 prod_id = prod['metadata']['shipped_product_id']
                 product = stripe.Product.retrieve(prod_id)
-
-                shipment = easypost.Shipment.create(
-                    from_address=current_app.config['KONBINI_SHIPPING_FROM'],
-                    to_address={
-                        'name': addr['name'],
-                        'street1': addr['address']['line1'],
-                        'street2': addr['address'].get('line2'),
-                        'city': addr['address']['city'],
-                        'state': addr['address']['state'],
-                        'zip': addr['address']['postal_code'],
-                        'country': addr['address']['country']
-                    },
-                    parcel=product.package_dimensions,
-                    # customs_info=customs_info
-                )
-
-                # Get cheapest rate
-                rate = min(float(r.rate) for r in shipment.rates)
+                rate = get_shipping_rate(product, addr)
 
                 # Add the item to this invoice
                 stripe.InvoiceItem.create(
                     invoice=invoice['id'],
                     customer=cus['id'],
-                    amount=math.ceil(rate*100), # convert to cents
+                    amount=rate,
                     currency='usd',
                     description='Shipping',
                 )
@@ -418,6 +426,7 @@ def subscribe():
         session['plan'] = {
             'name': name,
             'price': price,
+            'prod_id': product.id,
             'plan_id': plan_id,
             'shipped': shipped
         }
@@ -431,8 +440,35 @@ def subscribe():
             and not session['plan'].get('address'):
         return redirect(url_for('shop.subscribe_address'))
 
+    line_items = []
+    if session['plan'].get('shipped') == 'true' and current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
+        addr = session['plan']['address']
+        prod_id = session['plan']['prod_id']
+        product = stripe.Product.retrieve(prod_id)
+        rate = get_shipping_rate(product, addr)
+        line_items.append({
+            'name': 'Shipping',
+            'description': 'Shipping',
+            'amount': rate,
+            'currency': 'usd',
+            'quantity': 1
+        })
+
+    tax_rates = stripe.TaxRate.list(limit=10)
+    for tax in tax_rates:
+        if tax['jurisdiction'] == addr['address']['state']:
+            line_items.append({
+                'name': 'Tax',
+                'description': 'Tax',
+                'amount': (tax.percentage/100) * session['plan']['price'],
+                'currency': 'usd',
+                'quantity': 1
+            })
+            break
+
     session['stripe'] = stripe.checkout.Session.create(
         payment_method_types=['card'],
+        line_items=line_items,
         subscription_data={
             'items': [{
                 'plan':  session['plan']['plan_id']
