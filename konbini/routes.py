@@ -469,7 +469,7 @@ def subscribe():
                 line_items.append({
                     'name': 'Tax',
                     'description': 'Tax',
-                    'amount': (tax.percentage/100) * session['plan']['amount'],
+                    'amount': math.ceil((tax.percentage/100) * session['plan']['amount']),
                     'currency': 'usd',
                     'quantity': 1
                 })
