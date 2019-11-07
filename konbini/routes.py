@@ -479,7 +479,7 @@ def subscribe():
         cancel_url=url_for('shop.checkout_cancel', _external=True))
 
     address_changed = request.args.get('address_changed')
-    return render_template('shop/subscribe.html', address_changed=address_changed, **session['plan'])
+    return render_template('shop/subscribe.html', address_changed=address_changed, **session['plan'], line_items=line_items)
 
 
 @bp.route('/subscribe/address', methods=['GET', 'POST'])

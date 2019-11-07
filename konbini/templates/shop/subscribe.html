@@ -10,6 +10,12 @@
                 <td>{{ name }}</td>
                 <td>{{ price }}</td>
             </tr>
+            {% for item in line_items %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.amount }}</td>
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
 
