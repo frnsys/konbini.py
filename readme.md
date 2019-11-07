@@ -2,7 +2,7 @@
 
 A very simple storefront (no tracking, no user accounts, etc), basically a lightweight frontend for Stripe (goods/products and services/subscriptions) that integrates with EasyPost for shipping management and Mailgun for transactional emails.
 
-Currently `konbini` only supports domestic (US) shipping.
+`konbini` supports both domestic (US) and international shipping, but can't handle any special customs requirements.
 
 # Setup
 

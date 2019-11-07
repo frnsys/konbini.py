@@ -8,10 +8,6 @@ from pyusps import address_information
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
 
-# Only supporting domestic (US) shipping;
-# incorporating international shipping is
-# too complicated at this point
-SHIPPING_COUNTRY = 'US'
 USPS_ADDRESS_KEYS = {
     'address': 'line1',
     'address_extended': 'line2',
@@ -73,6 +69,9 @@ def is_safe_url(target):
 
 def normalize_address(address):
     """Normalize a domestic (US) address"""
+    if address['country'] != 'US':
+        return address, False
+
     addr = {
         'zip_code': address['postal_code'],
         'state': address['state'],
@@ -90,6 +89,7 @@ def normalize_address(address):
             norm_addr[k_to] = usps_addr.get(k_frm)
             if (norm_addr[k_to] or '').lower() != (address[k_to] or '').lower():
                 changed = True
+        norm_addr['country'] = 'US'
         return norm_addr, changed
     except ValueError:
         return None, True
@@ -214,12 +214,10 @@ def checkout():
     form = ShippingForm()
     if form.validate_on_submit():
         address = {k: form.data['address'][k] for k in
-                   ['line1', 'line2', 'city', 'state', 'postal_code']}
-                   # ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
+                   ['line1', 'line2', 'city', 'state', 'postal_code', 'country']}
         address, changed = normalize_address(address)
         if address is None:
             return render_template('shop/shipping.html', form=form, invalid_address=True)
-        address['country'] = SHIPPING_COUNTRY
         order = stripe.Order.create(
             currency='usd',
             items=[{
@@ -345,6 +343,7 @@ def checkout_completed_hook():
         if session['subscription'] is not None:
             sub_id = session['subscription']
             cus_id = session['customer']
+            line_items = session['line_items']
             sub = stripe.Subscription.retrieve(sub_id)
             meta = sub.metadata
             if meta:
@@ -354,12 +353,13 @@ def checkout_completed_hook():
 
             send_email(current_app.config['NEW_ORDER_RECIPIENT'],
                        'New subscription', 'new_subscription',
-                       subscription=sub)
+                       subscription=sub, line_items=line_items)
 
             # Notify customer
             customer = stripe.Customer.retrieve(cus_id)
             customer_email = customer['email']
-            send_email(customer_email, 'Thank you for your subscription', 'complete_subscription', subscription=sub)
+            send_email(customer_email, 'Thank you for your subscription', 'complete_subscription',
+                       subscription=sub, line_items=line_items)
             return '', 200
 
         else:
@@ -498,12 +498,10 @@ def subscribe_address():
     form = ShippingForm()
     if form.validate_on_submit():
         address = {k: form.data['address'][k] for k in
-                   ['line1', 'line2', 'city', 'state', 'postal_code']}
-                   # ['line1', 'line2', 'city', 'state', 'country', 'postal_code']}
+                   ['line1', 'line2', 'city', 'state', 'postal_code', 'country']}
         address, changed = normalize_address(address)
         if address is None:
             return render_template('shop/shipping.html', form=form, invalid_address=True)
-        address['country'] = SHIPPING_COUNTRY
         address['name'] = form.data['name']
 
         # So the session update property persists

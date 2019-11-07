@@ -13,6 +13,12 @@
             <td style="text-align:right;">{{ '${:,.2f}'.format(item.plan.amount/100) }}/{% if item.plan.interval_count > 1 %}{{ item.plan.interval_count }} {% endif %}{{ item.plan.interval }}{% if item.plan.interval_count > 1 %}s{% endif %}</td>
         </tr>
        {% endfor %}
+       {% for item in line_items %}
+           <tr>
+               <td>{{ item.name }}</td>
+               <td>{{ '${:,.2f}'.format(item.amount/100 * item.quantity) }}</td>
+           </tr>
+       {% endfor %}
   </table>
 </div>
 {% endblock %}
