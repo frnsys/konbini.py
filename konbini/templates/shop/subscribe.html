@@ -13,7 +13,7 @@
             {% for item in line_items %}
                 <tr>
                     <td>{{ item.name }}</td>
-                    <td>{{ item.amount }}</td>
+                    <td>{{ '${:,.2f}'.format(item.amount/100 * item.quantity) }}</td>
                 </tr>
             {% endfor %}
         </tbody>
