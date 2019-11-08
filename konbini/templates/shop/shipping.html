@@ -17,11 +17,16 @@
         <div class="column-3">
             {{ render_field_with_errors(form.address.city) }}
             {{ render_field_with_errors(form.address.state) }}
+            {% if not config.KONBINI_INTL_SHIPPING %}
+                {{ render_field_with_errors(form.address.postal_code) }}
+            {% endif %}
         </div>
-        <div class="column-2">
-            {{ render_field_with_errors(form.address.country) }}
-            {{ render_field_with_errors(form.address.postal_code) }}
-        </div>
+        {% if config.KONBINI_INTL_SHIPPING %}
+            <div class="column-2">
+                {{ render_field_with_errors(form.address.country) }}
+                {{ render_field_with_errors(form.address.postal_code) }}
+            </div>
+        {% endif %}
         <div class="actions">
             <input type="submit" value="Save Address">
         </div>

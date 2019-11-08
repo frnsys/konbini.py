@@ -212,6 +212,10 @@ def checkout():
         return redirect(url_for('shop.index'))
 
     form = ShippingForm()
+    if not current_app.config.get('KONBINI_INTL_SHIPPING'):
+        form.address.country.data = 'US'
+        form.address.country.validators = []
+
     if form.validate_on_submit():
         address = {k: form.data['address'][k] for k in
                    ['line1', 'line2', 'city', 'state', 'postal_code', 'country']}
@@ -496,6 +500,11 @@ def subscribe_address():
         return redirect(url_for('shop.plans'))
 
     form = ShippingForm()
+
+    if not current_app.config.get('KONBINI_INTL_SHIPPING'):
+        form.address.country.data = 'US'
+        form.address.country.validators = []
+
     if form.validate_on_submit():
         address = {k: form.data['address'][k] for k in
                    ['line1', 'line2', 'city', 'state', 'postal_code', 'country']}

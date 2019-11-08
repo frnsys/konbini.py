@@ -2,7 +2,7 @@
 
 A very simple storefront (no tracking, no user accounts, etc), basically a lightweight frontend for Stripe (goods/products and services/subscriptions) that integrates with EasyPost for shipping management and Mailgun for transactional emails.
 
-`konbini` supports both domestic (US) and international shipping, but can't handle any special customs requirements.
+`konbini` supports both domestic (US) and international shipping (disabled by default, see below), but can't handle any special customs requirements.
 
 # Setup
 
@@ -112,6 +112,9 @@ KONBINI_SHIPPING_FROM = {
     'zip': '...',
     'country': '...'
 }
+
+# Enable/disable international shipping
+KONBINI_INTL_SHIPPING = True
 ```
 
 # As a Standalone App
