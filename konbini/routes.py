@@ -347,7 +347,7 @@ def checkout_completed_hook():
         if session['subscription'] is not None:
             sub_id = session['subscription']
             cus_id = session['customer']
-            line_items = session['display_items']
+            line_items = [li for li in session['display_items'] if li['type'] == 'custom']
             sub = stripe.Subscription.retrieve(sub_id)
             meta = sub.metadata
             if meta:
