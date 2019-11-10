@@ -309,7 +309,7 @@ def subscribe_invoice_hook():
             if app_tax is not None:
                 stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
 
-            if current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
+            if current_app.config.get('KONBINI_INVOICE_SUB_SHIPPING'):
                 # Calculate shipping estimate
                 # customs_info = easypost.CustomsInfo.create(...)
 
@@ -454,7 +454,7 @@ def subscribe():
             'address': addr
         }
 
-        if current_app.config['KONBINI_INVOICE_SUB_SHIPPING']:
+        if current_app.config.get('KONBINI_INVOICE_SUB_SHIPPING'):
             prod_id = session['plan']['prod_id']
             plan_prod = stripe.Product.retrieve(prod_id)
             prod_id = plan_prod['metadata']['shipped_product_id']

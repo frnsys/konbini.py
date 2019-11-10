@@ -21,5 +21,5 @@ class Konbini:
         self.app.get_products = core.get_products
         self.app.get_plans = core.get_plans
 
-        if app.config['KONBINI_INVOICE_SUB_SHIPPING'] and 'KONBINI_SHIPPING_FROM' not in app.config:
+        if app.config.get('KONBINI_INVOICE_SUB_SHIPPING') and 'KONBINI_SHIPPING_FROM' not in app.config:
             raise Exception('If you specify "KONBINI_INVOICE_SUB_SHIPPING", "KONBINI_SHIPPING_FROM" must also be set')
