@@ -42,12 +42,12 @@ def get_shipping_rate(product, addr):
     return math.ceil(rate*100)
 
 
-def send_email(to, subject, template, reply_to=None, bcc=None, **kwargs):
+def send_email(tos, subject, template, reply_to=None, bcc=None, **kwargs):
     reply_to = reply_to or current_app.config['MAIL_REPLY_TO']
     msg = Message(subject,
                 body=render_template('shop/email/{}.txt'.format(template), **kwargs),
                 html=render_template('shop/email/{}.html'.format(template), **kwargs),
-                recipients=[to],
+                recipients=tos,
                 reply_to=reply_to,
                 bcc=bcc)
     mail = current_app.extensions.get('mail')
@@ -331,6 +331,7 @@ def subscribe_invoice_hook():
 
 @bp.route('/checkout/completed', methods=['POST'])
 def checkout_completed_hook():
+    new_order_recipients = current_app.config['NEW_ORDER_RECIPIENTS']
     payload = request.data
     sig_header = request.headers['Stripe-Signature']
     event = stripe.Webhook.construct_event(
@@ -355,14 +356,14 @@ def checkout_completed_hook():
                 addr = meta
                 stripe.Customer.modify(cus_id, name=name, shipping={'name': name, 'address': addr})
 
-            send_email(current_app.config['NEW_ORDER_RECIPIENT'],
+            send_email(new_order_recipients,
                        'New subscription', 'new_subscription',
                        subscription=sub, line_items=line_items)
 
             # Notify customer
             customer = stripe.Customer.retrieve(cus_id)
             customer_email = customer['email']
-            send_email(customer_email, 'Thank you for your subscription', 'complete_subscription',
+            send_email([customer_email], 'Thank you for your subscription', 'complete_subscription',
                        subscription=sub, line_items=line_items)
             return '', 200
 
@@ -403,13 +404,13 @@ def checkout_completed_hook():
 
             # Notify fulfillment person
             label_url = shipment.postage_label.label_url
-            send_email(current_app.config['NEW_ORDER_RECIPIENT'],
+            send_email(new_order_recipients,
                        'New order placed', 'new_order',
                        order=order, items=items, label_url=label_url)
 
             # Notify customer
             tracking_url = shipment.tracker.public_url
-            send_email(customer_email, 'Thank you for your order', 'complete_order', order=order, items=items, tracking_url=tracking_url)
+            send_email([customer_email], 'Thank you for your order', 'complete_order', order=order, items=items, tracking_url=tracking_url)
     return '', 200
 
 

@@ -84,8 +84,8 @@ In `config.py`:
 # Your shop name
 SHOP_NAME = 'Foo'
 
-# What email gets notified when new orders are placed
-NEW_ORDER_RECIPIENT = 'foo@foo.com'
+# What emails gets notified when new orders are placed
+NEW_ORDER_RECIPIENTS = ['foo@foo.com']
 
 # The email sender
 MAIL_REPLY_TO = 'foo@foo.com'
