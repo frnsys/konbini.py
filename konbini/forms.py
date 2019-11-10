@@ -2,6 +2,7 @@ from flask_wtf import FlaskForm
 from country_list import countries_for_language
 from wtforms.validators import Email, InputRequired
 from wtforms.fields import TextField, FormField, SelectField
+from wtforms.fields.html5 import EmailField
 
 countries = countries_for_language('en')
 
@@ -19,3 +20,6 @@ class AddressForm(FlaskForm):
 class ShippingForm(FlaskForm):
     name = TextField('Name', [InputRequired()])
     address = FormField(AddressForm)
+
+class EmailForm(FlaskForm):
+    email = EmailField('Email', [InputRequired(), Email()])

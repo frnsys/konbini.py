@@ -1,0 +1,16 @@
+{% from "shop/_macros.html" import render_field_with_errors %}
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="authenticate">
+    <h2>Confirm Email</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ render_field_with_errors(form.email) }}
+        <div class="actions">
+            <input type="submit" value="Send Confirmation">
+        </div>
+    </form>
+</div>
+{% endblock %}
+
