@@ -49,7 +49,7 @@ img {
 main {
   padding: 1em;
 }
-.cart, .checkout {
+.cart, .checkout, .authenticate {
   max-width: 480px;
   margin: 0 auto;
   background: #fff;
@@ -91,13 +91,16 @@ main {
   background: none;
 }
 
-.checkout .form-field {
+.checkout .form-field,
+.authenticate .form-field{
   margin: 0 0 0.5em 0;
 }
-.checkout .form-field label {
+.checkout .form-field label,
+.authenticate .form-field label {
   display: block;
 }
-.checkout .form-field input {
+.checkout .form-field input,
+.authenticate .form-field input {
   width: 100%;
 }
 .checkout .column-2,
@@ -114,7 +117,9 @@ main {
   padding-right: 1em;
 }
 .checkout input[type=submit],
-.checkout button {
+.checkout button,
+.authenticate input[type=submit],
+.authenticate button {
   width: 100%;
   display: block;
   margin: 1em 0;
@@ -290,4 +295,20 @@ a.go-checkout:hover {
 .thanks {
   margin: 6em auto 3em auto;
   text-align: center;
+}
+
+#card-element {
+	padding: 1em;
+	margin: 0.5em 0;
+	border: 1px solid black;
+}
+
+.billing h2 {
+  margin: 0;
+}
+.billing h3 {
+  margin: 0 0 1em 0;
+  font-weight: normal;
+  font-size: 0.9em;
+  line-height: 1;
 }

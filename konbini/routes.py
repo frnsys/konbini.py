@@ -2,7 +2,8 @@ import math
 import stripe
 import easypost
 from . import core
-from flask_mail import Message
+from .util import send_email
+from .auth import auth_required
 from .forms import ShippingForm
 from pyusps import address_information
 from urllib.parse import urlparse, urljoin
@@ -41,17 +42,6 @@ def get_shipping_rate(product, addr):
     # Convert to cents
     return math.ceil(rate*100)
 
-
-def send_email(tos, subject, template, reply_to=None, bcc=None, **kwargs):
-    reply_to = reply_to or current_app.config['MAIL_REPLY_TO']
-    msg = Message(subject,
-                body=render_template('shop/email/{}.txt'.format(template), **kwargs),
-                html=render_template('shop/email/{}.html'.format(template), **kwargs),
-                recipients=tos,
-                reply_to=reply_to,
-                bcc=bcc)
-    mail = current_app.extensions.get('mail')
-    mail.send(msg)
 
 def is_in_stock(sku):
     inv = sku['inventory']
@@ -549,3 +539,22 @@ def tax():
         order_update = {'items': []}
 
     return jsonify(order_update=order_update)
+
+@bp.route('/billing/update', methods=['GET', 'POST'])
+@auth_required
+def update_billing(email=None):
+    if request.method == 'POST':
+        card_token = request.form.get('stripeToken')
+        if card_token is not None:
+
+            # Get customers with email
+            customers = core.get_customers(email)
+
+            # Update across all customers with matching email
+            for cus in customers:
+                if cus.subscriptions:
+                    stripe.Customer.modify(cus.id, source=card_token)
+
+            flash('Billing information successfully updated.')
+
+    return render_template('shop/billing.html', email=email)

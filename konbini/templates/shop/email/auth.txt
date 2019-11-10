@@ -1,0 +1,7 @@
+Someone requested an update to your {{ config.SHOP_NAME }} account.
+
+If this was not you, please ignore this email.
+
+If this was you, click the following link to update your information:
+
+{{ url_for(route, token=token, _external=True) }}

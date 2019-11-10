@@ -81,6 +81,10 @@ Stripe does provide integrations with paid tax calculation services which are pr
 In `config.py`:
 
 ```
+# For user email authentication
+SECRET_KEY = '...'
+EMAIL_SALT = '...'
+
 # Your shop name
 SHOP_NAME = 'Foo'
 
