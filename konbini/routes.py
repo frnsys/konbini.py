@@ -540,7 +540,7 @@ def tax():
 
     return jsonify(order_update=order_update)
 
-@bp.route('/billing/update', methods=['GET', 'POST'])
+@bp.route('/subscribe/billing', methods=['GET', 'POST'])
 @auth_required
 def update_billing(email=None):
     if request.method == 'POST':
