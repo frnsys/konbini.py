@@ -344,11 +344,14 @@ def checkout_completed_hook():
             if meta:
                 name = meta.pop('name')
                 addr = meta
-                stripe.Customer.modify(cus_id, name=name, shipping={'name': name, 'address': addr})
+                shipping = {'name': name, 'address': addr}
+                stripe.Customer.modify(cus_id, name=name, shipping=shipping)
+            else:
+                shipping = {}
 
             send_email(new_order_recipients,
                        'New subscription', 'new_subscription',
-                       subscription=sub, line_items=line_items)
+                       subscription=sub, line_items=line_items, shipping=shipping)
 
             # Notify customer
             customer = stripe.Customer.retrieve(cus_id)

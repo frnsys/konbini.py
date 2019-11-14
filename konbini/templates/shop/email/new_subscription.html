@@ -20,6 +20,19 @@
            </tr>
        {% endfor %}
   </table>
+
+  {% if shipping %}
+    <div style="margin-top:20px;margin-bottom:10px;font-weight:bold;">Shipping Address</div>
+    <p>
+        {{ shipping.name }}<br />
+        {{ shipping.address.line1 }}<br />
+        {% if shipping.address.line2 %}{{ shipping.address.line2 }}<br />{% endif %}
+        {{ shipping.address.city }}<br />
+        {{ shipping.address.state }}<br />
+        {{ shipping.address.postal_code }}<br />
+        {{ shipping.address.country }}
+    </p>
+  {% endif %}
 </div>
 {% endblock %}
 
