@@ -309,7 +309,6 @@ def subscribe_invoice_hook():
 
                 # Add the item to this invoice
                 stripe.InvoiceItem.create(
-                    invoice=invoice['id'],
                     customer=cus['id'],
                     amount=rate,
                     currency='usd',
