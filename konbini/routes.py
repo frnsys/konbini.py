@@ -429,7 +429,7 @@ def subscribe():
             'shipped': shipped
         }
 
-    if not session['plan']:
+    if not session.get('plan'):
         return redirect(url_for('shop.plans'))
 
     # If the session requires shipping info,
@@ -489,7 +489,7 @@ def subscribe():
 
 @bp.route('/subscribe/address', methods=['GET', 'POST'])
 def subscribe_address():
-    if not session['plan']:
+    if not session.get('plan'):
         return redirect(url_for('shop.plans'))
 
     form = ShippingForm()
