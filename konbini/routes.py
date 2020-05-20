@@ -21,9 +21,12 @@ bp = Blueprint('shop', __name__, template_folder='templates')
 
 
 def get_shipping_rate(product, addr):
-    shipment = easypost.Shipment.create(
-        from_address=current_app.config['KONBINI_SHIPPING_FROM'],
-        to_address={
+    """Estimate a shipping rate for a product.
+    This does not actually purchase shipping, this is just to figure out
+    how much to charge for it."""
+    kwargs = {
+        'from_address': current_app.config['KONBINI_SHIPPING_FROM'],
+        'to_address': {
             'name': addr['name'],
             'street1': addr['address']['line1'],
             'street2': addr['address'].get('line2'),
@@ -32,9 +35,31 @@ def get_shipping_rate(product, addr):
             'zip': addr['address']['postal_code'],
             'country': addr['address']['country']
         },
-        parcel=product.package_dimensions,
-        # customs_info=customs_info
-    )
+        'parcel': product.package_dimensions,
+    }
+
+    # https://www.easypost.com/customs-guide
+    if addr['address']['country'] != 'US' and 'KONBINI_CUSTOMS' in current_app.config:
+        # Grab first SKU to get price
+        skus = stripe.SKU.list(limit=100, product=product.id, active=True)['data']
+        price = skus[0].price/100 # cents to USD
+
+        # Create customs item. We are making a few assumptions here
+        customs_item = easypost.CustomsItem.create(
+            quantity=1,
+            description=product.description,
+            value=price,
+            weight=product.package_dimensions['weight'],
+            code=product.id,
+            origin_country='US', # NOTE assumed to be US
+            # hs_tariff_number # isn't required by easypost
+        )
+        customs_info = easypost.CustomsInfo.create(
+            customs_items=[customs_item],
+            **current_app.config['KONBINI_CUSTOMS']
+        )
+        kwargs['customs_info'] = customs_info
+    shipment = easypost.Shipment.create(**kwargs)
 
     # Get cheapest rate
     rate = min(float(r.rate) for r in shipment.rates)
@@ -301,8 +326,6 @@ def subscribe_invoice_hook():
 
             if current_app.config.get('KONBINI_INVOICE_SUB_SHIPPING'):
                 # Calculate shipping estimate
-                # customs_info = easypost.CustomsInfo.create(...)
-
                 prod_id = prod['metadata']['shipped_product_id']
                 product = stripe.Product.retrieve(prod_id)
                 rate = get_shipping_rate(product, addr)
