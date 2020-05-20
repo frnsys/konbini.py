@@ -2,7 +2,9 @@
 
 A very simple storefront (no tracking, no user accounts, etc), basically a lightweight frontend for Stripe (goods/products and services/subscriptions) that integrates with EasyPost for shipping management and Mailgun for transactional emails.
 
-`konbini` supports both domestic (US) and international shipping (disabled by default, see below), but can't handle any special customs requirements.
+`konbini` supports both domestic (US) and international shipping (disabled by default, see below), but has very limited support for customs.
+
+Currently `konbini` assumes you are operating in the US...I would like to change that, but it's already complicated enough dealing with e-commerce and shipping in one country. Help is of course always welcome.
 
 # Setup
 
@@ -25,7 +27,7 @@ In the Stripe dashboard:
     - When adding products, __make sure package dimensions and weights are set for each SKU to compute shipping costs__. Otherwise they will be ignored.
 - Add subscription products and plans (`Billing > Products`)
     - Note that if a subscription product requires shipping information, add a metadata field called `shipped` and set its value to `true`. **Also note that this does _not_ automatically generate shipping labels; this assumes you have your own process for shipping out subscription items.**
-        - You can, however set `KONBINI_INVOICE_SUB_SHIPPING = True` to add shipping costs when a subscription payment is invoiced. This still does not create the label, though. **If you use this, you must set `KONBINI_SHIPPING_FROM` (see below) and your subscription product metadata must also have a field called `shipped_product_id` set to the product id to be shipped. This product must have package dimensions and weight defined.**
+        - You can, however set `KONBINI_INVOICE_SUB_SHIPPING = True` to add shipping costs when a subscription payment is invoiced. This still does not create the label, though. **If you use this, you must set `KONBINI_SHIPPING_FROM` (see below) and your subscription product metadata must also have a field called `shipped_product_id` set to the product id to be shipped. This product must have package dimensions and weight defined.** Also see the note below on international shipping.
 - Add tax rates (used for subscriptions) (`Billing > Tax Rates`). These match the customer shipping address `state` field to the tax rate's `Region` value. E.g. if you want to set an NY sales tax, set tax rate `Region` to `NY`, and whenever a subscription shipping address has `NY` for the `state` field, the tax will be applied to each invoice.
 - Setup webhooks (`Developers > Webhooks`)
     - For automatically generating shipping labels and sending order confirmation emails, setup a `checkout.session.completed` webhook, pointing to your `/checkout/completed` endpoint, e.g. `https://konbi.ni/shop/checkout/completed`.
@@ -116,10 +118,34 @@ KONBINI_SHIPPING_FROM = {
     'zip': '...',
     'country': '...'
 }
+```
 
-# Enable/disable international shipping
+# International shipping
+
+To enable very, very basic support for international shipping, add this to your config:
+
+```
 KONBINI_INTL_SHIPPING = True
 ```
+
+All this really does is allow non-US addresses to be used for shipping. As noted above, only US addresses will be validated.
+
+If you are planning on doing international shipping, you will also want to supply some [basic customs information](https://www.easypost.com/customs-guide#step2):
+
+```
+KONBINI_CUSTOMS = {
+    'contents_type': 'merchandise',
+    'contents_explanation': None,
+    'restriction_type': 'none',
+    'restriction_comments': None,
+    'customs_certify': True,
+    'customs_signer': 'Your Name',
+    'non_delivery_option': 'return',
+    'eel_pfc': 'NOEEI 30.37(a)'
+}
+```
+
+Currently this is only used to estimate shipping rates, and only for products shipped as a part of subscriptions. This is _not_ added to shipping labels. See the note for `KONBINI_INVOICE_SUB_SHIPPING` above.
 
 # As a Standalone App
 
