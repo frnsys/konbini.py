@@ -1,0 +1,16 @@
+{% from "shop/_macros.html" import render_field_with_errors %}
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="checkout">
+    <h2>Checkout</h2>
+    <h3>Email</h3>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ render_field_with_errors(form.email) }}
+        <div class="actions">
+            <input type="submit" value="Save Email">
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -19,6 +19,7 @@ class AddressForm(FlaskForm):
 
 class ShippingForm(FlaskForm):
     name = TextField('Name', [InputRequired()])
+    email = EmailField('Email', [InputRequired(), Email()])
     address = FormField(AddressForm)
 
 class EmailForm(FlaskForm):

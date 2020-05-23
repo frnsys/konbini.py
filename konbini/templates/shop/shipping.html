@@ -4,12 +4,14 @@
 {% block content %}
 <div class="checkout">
     <h2>Checkout</h2>
-    <h3>Shipping address</h3>
-    {% if invalid_address %}
-        <div class="checkout--error">We were unable to validate that address.</div>
-    {% endif %}
     <form method="POST">
         {{ form.hidden_tag() }}
+        {{ render_field_with_errors(form.email) }}
+
+        <h3>Shipping address</h3>
+        {% if invalid_address %}
+            <div class="checkout--error">We were unable to validate that address.</div>
+        {% endif %}
         {{ form.address.hidden_tag() }}
         {{ render_field_with_errors(form.name) }}
         {{ render_field_with_errors(form.address.line1) }}

@@ -4,7 +4,7 @@ import easypost
 from . import core
 from .util import send_email
 from .auth import auth_required
-from .forms import ShippingForm
+from .forms import EmailForm, ShippingForm
 from pyusps import address_information
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
@@ -232,6 +232,7 @@ def checkout():
         form.address.country.validators = []
 
     if form.validate_on_submit():
+        session['email'] = form.data['email']
         address = {k: form.data['address'][k] for k in
                    ['line1', 'line2', 'city', 'state', 'postal_code', 'country']}
         address, changed = normalize_address(address)
@@ -266,18 +267,31 @@ def pay():
     if not session.get('order'):
         return redirect(url_for('shop.cart'))
 
-    address_changed = request.args.get('address_changed')
-    session['stripe'] = stripe.checkout.Session.create(
-        client_reference_id=session['order']['id'],
-        payment_method_types=['card'],
-        line_items=[{
+    kwargs = {
+        'client_reference_id': session['order']['id'],
+        'payment_method_types': ['card'],
+
+        # Stripe errors if a line item amount is 0
+        'line_items': [{
             'name': item['description'],
             'amount': item['amount'],
             'currency': item['currency'],
             'quantity': item['quantity'] or 1,
-        } for item in session['order']['items']],
-        success_url=url_for('shop.checkout_success', _external=True),
-        cancel_url=url_for('shop.checkout_cancel', _external=True))
+        } for item in session['order']['items'] if item['amount'] > 0],
+
+        'success_url': url_for('shop.checkout_success', _external=True),
+        'cancel_url': url_for('shop.checkout_cancel', _external=True)
+    }
+
+    # Try to find customer with existing email
+    customers = core.get_customers(session['email'])
+    if customers:
+        kwargs['customer'] = customers[0].id
+    else:
+        kwargs['customer_email'] = session['email']
+
+    address_changed = request.args.get('address_changed')
+    session['stripe'] = stripe.checkout.Session.create(**kwargs)
 
     return render_template('shop/pay.html', address_changed=address_changed)
 
@@ -396,6 +410,7 @@ def checkout_completed_hook():
 
             # Associate payment id with this order
             stripe.Order.modify(order_id,
+                                status='paid',
                                 metadata={'payment': session['payment_intent']})
 
             # print(session)
@@ -455,11 +470,16 @@ def subscribe():
     if not session.get('plan'):
         return redirect(url_for('shop.plans'))
 
-    # If the session requires shipping info,
-    # ensure that the address has been set
-    if session['plan'] and session['plan'].get('shipped') \
+    if session['plan']:
+        # If the session requires shipping info,
+        # ensure that the address has been set
+        if session['plan'].get('shipped') \
             and not session['plan'].get('address'):
-        return redirect(url_for('shop.subscribe_address'))
+            return redirect(url_for('shop.subscribe_address'))
+
+        # Otherwise, just ensure that we have an email
+        elif not session.get('email'):
+            return redirect(url_for('shop.subscribe_email'))
 
     line_items = []
     if session['plan'].get('shipped'):
@@ -494,17 +514,27 @@ def subscribe():
                     'quantity': 1
                 })
 
-    session['stripe'] = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=line_items,
-        subscription_data={
+    kwargs = {
+        'payment_method_types': ['card'],
+        'line_items': line_items,
+        'subscription_data' :{
             'items': [{
                 'plan':  session['plan']['plan_id']
             }],
             'metadata': session['plan'].get('address')
         },
-        success_url=url_for('shop.checkout_success', _external=True),
-        cancel_url=url_for('shop.checkout_cancel', _external=True))
+        'success_url': url_for('shop.checkout_success', _external=True),
+        'cancel_url': url_for('shop.checkout_cancel', _external=True)
+    }
+
+    # Try to find customer with existing email
+    customers = core.get_customers(session['email'])
+    if customers:
+        kwargs['customer'] = customers[0].id
+    else:
+        kwargs['customer_email'] = session['email']
+
+    session['stripe'] = stripe.checkout.Session.create(**kwargs)
 
     address_changed = request.args.get('address_changed')
     return render_template('shop/subscribe.html', address_changed=address_changed, line_items=line_items, **session['plan'])
@@ -522,6 +552,7 @@ def subscribe_address():
         form.address.country.validators = []
 
     if form.validate_on_submit():
+        session['email'] = form.data['email']
         address = {k: form.data['address'][k] for k in
                    ['line1', 'line2', 'city', 'state', 'postal_code', 'country']}
         address, changed = normalize_address(address)
@@ -536,6 +567,18 @@ def subscribe_address():
 
         return redirect(url_for('shop.subscribe', address_changed=True))
     return render_template('shop/shipping.html', form=form)
+
+
+@bp.route('/subscribe/email', methods=['GET', 'POST'])
+def subscribe_email():
+    if not session.get('plan'):
+        return redirect(url_for('shop.plans'))
+
+    form = EmailForm()
+    if form.validate_on_submit():
+        session['email'] = form.data['email']
+        return redirect(url_for('shop.subscribe', address_changed=False))
+    return render_template('shop/email.html', form=form)
 
 
 @bp.route('/checkout/tax', methods=['POST'])
