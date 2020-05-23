@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="Description" CONTENT="TODO">
+  <title>konbini</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    {% include "_messages.html" %}
+    {% block content %}
+    {% endblock %}
+</body>
+</html>
+
+
