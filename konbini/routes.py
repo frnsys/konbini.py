@@ -608,6 +608,35 @@ def tax():
 
     return jsonify(order_update=order_update)
 
+
+@bp.route('/subscribe/manage', methods=['GET', 'POST'])
+def manage_subscription():
+    """Send link to Stripe's self-serve portal"""
+    if request.method == 'POST':
+        form = EmailForm()
+        if form.validate_on_submit():
+            email = form.data['email']
+            customers = core.get_customers(email)
+
+            urls = []
+            for cus in customers:
+                if cus.subscriptions:
+                    res = stripe.billing_portal.Session.create(
+                        customer=cus.id,
+                        return_url=url_for('shop.manage_subscription', _external=True),
+                    )
+                    urls.append(res['url'])
+
+            if urls:
+                send_email([email],
+                       'Manage your subscriptions', 'manage_subscriptions',
+                       urls=urls)
+
+            flash('We will send a link to manage subscriptions matching that email address if any are found.')
+            return render_template('shop/manage.html')
+    return render_template('shop/manage.html')
+
+
 @bp.route('/subscribe/billing', methods=['GET', 'POST'])
 @auth_required
 def update_billing(email=None):

@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="checkout">
+    <h2>Manage Subscription</h2>
+    <p>Enter the email associated with your subscription below.</p>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ render_field_with_errors(form.email) }}
+        <div class="actions">
+            <input type="submit" value="Submit">
+        </div>
+    </form>
+</div>

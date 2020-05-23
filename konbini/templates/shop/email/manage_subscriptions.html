@@ -1,0 +1,14 @@
+{% extends 'shop/email/layout.html' %}
+{% block content %}
+<div>
+  <div style="line-height: 10px; font-size: 1px">&nbsp;</div>
+  <div style="font-size:12px;line-height:18px;font-family:&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif;color:#222222;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 18px"><span style="font-size: 18px; line-height: 27px;"><strong><span style="line-height: 27px; font-size: 18px;">Manage your subscriptions below<br></span></strong></span></p></div>
+</div>
+<div>
+  <ul>
+      {% for url in urls %}
+          <li><a href="{{ url }}">{{ url }}</a></li>
+      {% endfor %}
+  </ul>
+</div>
+{% endblock %}
