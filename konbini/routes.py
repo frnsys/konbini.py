@@ -612,8 +612,8 @@ def tax():
 @bp.route('/subscribe/manage', methods=['GET', 'POST'])
 def manage_subscription():
     """Send link to Stripe's self-serve portal"""
+    form = EmailForm()
     if request.method == 'POST':
-        form = EmailForm()
         if form.validate_on_submit():
             email = form.data['email']
             customers = core.get_customers(email)
@@ -633,8 +633,8 @@ def manage_subscription():
                        urls=urls)
 
             flash('We will send a link to manage subscriptions matching that email address if any are found.')
-            return render_template('shop/manage.html')
-    return render_template('shop/manage.html')
+            return render_template('shop/manage.html', form=form)
+    return render_template('shop/manage.html', form=form)
 
 
 @bp.route('/subscribe/billing', methods=['GET', 'POST'])
