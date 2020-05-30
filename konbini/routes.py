@@ -310,10 +310,10 @@ def subscribe_invoice_hook():
     payload = request.data
     sig_header = request.headers['Stripe-Signature']
     event = stripe.Webhook.construct_event(
-        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRETS']['invoice.upcoming']
+        payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRETS']['invoice.created']
     )
 
-    if event['type'] == 'invoice.upcoming':
+    if event['type'] == 'invoice.created':
         invoice = event['data']['object']
 
         cus = stripe.Customer.retrieve(invoice['customer'])
@@ -336,7 +336,7 @@ def subscribe_invoice_hook():
                     app_tax = tax
                     break
             if app_tax is not None:
-                stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
+                invoice.modify(default_tax_rates=[app_tax.id])
 
             if current_app.config.get('KONBINI_INVOICE_SUB_SHIPPING'):
                 # Calculate shipping estimate
