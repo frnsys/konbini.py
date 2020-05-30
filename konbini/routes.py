@@ -336,7 +336,7 @@ def subscribe_invoice_hook():
                     app_tax = tax
                     break
             if app_tax is not None:
-                invoice.modify(default_tax_rates=[app_tax.id])
+                stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
 
             if current_app.config.get('KONBINI_INVOICE_SUB_SHIPPING'):
                 # Calculate shipping estimate
@@ -347,6 +347,7 @@ def subscribe_invoice_hook():
                 # Add the item to this invoice
                 stripe.InvoiceItem.create(
                     customer=cus['id'],
+                    invoice=invoice['id'],
                     amount=rate,
                     currency='usd',
                     description='Shipping',
