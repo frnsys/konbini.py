@@ -410,7 +410,7 @@ def checkout_completed_hook():
 
             # Associate payment id with this order
             stripe.Order.modify(order_id,
-                                status='paid',
+                                # status='paid', # Stripe does not let you go from created->paid
                                 metadata={'payment': session['payment_intent']})
 
             # print(session)
