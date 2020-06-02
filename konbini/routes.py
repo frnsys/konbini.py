@@ -315,6 +315,9 @@ def subscribe_invoice_hook():
 
     if event['type'] == 'invoice.created':
         invoice = event['data']['object']
+        # This event still gets called even if the invoice
+        # is no longer in draft form, ignore to avoid errors
+        if invoice['status'] != 'draft': return
 
         cus = stripe.Customer.retrieve(invoice['customer'])
         sub = stripe.Subscription.retrieve(invoice['subscription'])
