@@ -205,6 +205,12 @@ def cart():
             price = sku.amount
             interval = sku.interval
             interval_count = sku.interval_count
+        elif sku_id.startswith('price_'):
+            sku = stripe.Price.retrieve(sku_id)
+            price = sku.unit_amount
+            interval = sku.recurring.interval
+            interval_count = sku.recurring.interval_count
+
         session['meta'][sku_id] = {
             'name': name,
             'price': price,
