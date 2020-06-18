@@ -183,8 +183,12 @@ def cart():
         elif sku_id.startswith('price_'):
             sku = stripe.Price.retrieve(sku_id)
             price = sku.unit_amount
-            interval = sku.recurring.interval
-            interval_count = sku.recurring.interval_count
+            if sku.recurring:
+                interval = sku.recurring.interval
+                interval_count = sku.recurring.interval_count
+            else:
+                interval = None
+                interval_count = None
 
         session['meta'][sku_id] = {
             'name': name,
@@ -433,7 +437,7 @@ def checkout_completed_hook():
 def subscribe():
     if request.method == 'POST':
         name = request.form['name']
-        price_id = request.form['id']
+        price_id = request.form['sku']
 
         try:
             price = stripe.Price.retrieve(price_id)
