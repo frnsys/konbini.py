@@ -20,10 +20,25 @@ USPS_ADDRESS_KEYS = {
 bp = Blueprint('shop', __name__, template_folder='templates')
 
 
-def get_shipping_rate(product, addr):
+def get_shipping_rate(products, addr):
     """Estimate a shipping rate for a product.
     This does not actually purchase shipping, this is just to figure out
     how much to charge for it."""
+    package_dimensions = [{
+        k: float(p.metadata.get(k))
+        for k in ['height', 'weight', 'length', 'width']
+    } for p, _ in products]
+
+    # ENH This should use some 3d bin packing algorithm
+    # but for now just take the largest product volume
+    # ENH this should take quantity into account
+    dimensions = max(package_dimensions,
+            key=lambda p: p['height'] * p['weight'] * p['length'])
+
+    # We can at least sum the weights
+    total_weight = sum(p['weight'] for p in package_dimensions)
+    dimensions['weight'] = total_weight
+
     kwargs = {
         'from_address': current_app.config['KONBINI_SHIPPING_FROM'],
         'to_address': {
@@ -35,27 +50,36 @@ def get_shipping_rate(product, addr):
             'zip': addr['address']['postal_code'],
             'country': addr['address']['country']
         },
-        'parcel': product.package_dimensions,
+        'parcel': dimensions,
     }
 
     # https://www.easypost.com/customs-guide
     if addr['address']['country'] != 'US' and 'KONBINI_CUSTOMS' in current_app.config:
-        # Grab first SKU to get price
-        skus = stripe.SKU.list(limit=100, product=product.id, active=True)['data']
-        price = skus[0].price/100 # cents to USD
+        customs_items = []
+        for (product, quantity), dims in zip(products, package_dimensions):
+            # ENH this can be improved
+            # Grab first SKU to get price
+            skus = stripe.SKU.list(limit=100, product=product.id, active=True)['data']
+            if skus:
+                # Try prices
+                price = skus[0].price/100 # cents to USD
+            else:
+                prices = stripe.Price.list(limit=100, product=product.id, active=True)['data']
+                price = prices[0].unit_amount/100 # cents to USD
 
-        # Create customs item. We are making a few assumptions here
-        customs_item = easypost.CustomsItem.create(
-            quantity=1,
-            description=product.description,
-            value=price,
-            weight=product.package_dimensions['weight'],
-            code=product.id,
-            origin_country='US', # NOTE assumed to be US
-            # hs_tariff_number # isn't required by easypost
-        )
+            # Create customs item. We are making a few assumptions here
+            customs_item = easypost.CustomsItem.create(
+                quantity=quantity,
+                description=product.description,
+                value=price,
+                weight=dims['weight'],
+                code=product.id,
+                origin_country='US', # NOTE assumed to be US
+                # hs_tariff_number # isn't required by easypost
+            )
+            customs_items.append(customs_item)
         customs_info = easypost.CustomsInfo.create(
-            customs_items=[customs_item],
+            customs_items=customs_items,
             **current_app.config['KONBINI_CUSTOMS']
         )
         kwargs['customs_info'] = customs_info
@@ -65,7 +89,7 @@ def get_shipping_rate(product, addr):
     rate = min(float(r.rate) for r in shipment.rates)
 
     # Convert to cents
-    return math.ceil(rate*100)
+    return math.ceil(rate*100), shipment.id
 
 
 def is_in_stock(sku):
@@ -151,6 +175,7 @@ def cart():
 
     name = request.form['name']
     sku_id = request.form['sku']
+    product_id = request.form['product']
     quantity = request.form.get('quantity')
     if quantity is not None:
         quantity = int(quantity)
@@ -194,7 +219,8 @@ def cart():
             'name': name,
             'price': price,
             'interval': interval,
-            'interval_count': interval_count
+            'interval_count': interval_count,
+            'product_id': product_id
         }
 
     if added:
@@ -223,49 +249,57 @@ def checkout():
         address, changed = normalize_address(address)
         if address is None:
             return render_template('shop/shipping.html', form=form, invalid_address=True)
-        order = stripe.Order.create(
-            currency='usd',
-            items=[{
-                'type': 'sku',
-                'parent': sku_id,
-                'quantity': quantity,
-                'amount': session['meta'][sku_id]['price'],
-                'description': session['meta'][sku_id]['name']
-            } for sku_id, quantity in session['cart'].items()],
-            shipping={
-                'name': form.data['name'],
-                'address': address
-            })
 
-        # Choose the cheapest shipping option
-        if order['shipping_methods']:
-            cheapest_shipping = min(order['shipping_methods'], key=lambda sm: sm['amount'])
-            session['order'] = stripe.Order.modify(
-                order['id'],
-                selected_shipping_method=cheapest_shipping['id']
-            )
+        session['shipping'] = {
+            'name': form.data['name'],
+            'address': address
+        }
+
         return redirect(url_for('shop.pay', address_changed=True))
     return render_template('shop/shipping.html', form=form)
 
 @bp.route('/checkout/pay')
 def pay():
-    if not session.get('order'):
+    if not session.get('shipping'):
         return redirect(url_for('shop.cart'))
 
+    products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id']), quantity)
+            for sku_id, quantity in session['cart'].items()]
+    rate, shipment_id = get_shipping_rate(products, session['shipping'])
+
+    items = [{
+        'currency': 'usd',
+        'name': session['meta'][sku_id]['name'],
+        'amount': session['meta'][sku_id]['price'],
+        'quantity': quantity,
+    } for sku_id, quantity in session['cart'].items()]
+
+    items.append({
+        'currency': 'usd',
+        'name': 'Shipping',
+        'amount': rate,
+        'quantity': 1,
+    })
+    total = sum(i['amount'] for i in items)
+
+    tax_rates = stripe.TaxRate.list(limit=10)
+    for tax in tax_rates:
+        if tax['jurisdiction'] == session['shipping']['address']['state']:
+            items.append({
+                'name': 'Tax',
+                'amount': math.ceil((tax.percentage/100) * total),
+                'currency': 'usd',
+                'quantity': 1
+            })
+
     kwargs = {
-        'client_reference_id': session['order']['id'],
         'payment_method_types': ['card'],
-
-        # Stripe errors if a line item amount is 0
-        'line_items': [{
-            'name': item['description'],
-            'amount': item['amount'],
-            'currency': item['currency'],
-            'quantity': item['quantity'] or 1,
-        } for item in session['order']['items'] if item['amount'] > 0],
-
+        'line_items': items,
         'success_url': url_for('shop.checkout_success', _external=True),
-        'cancel_url': url_for('shop.checkout_cancel', _external=True)
+        'cancel_url': url_for('shop.checkout_cancel', _external=True),
+        'metadata': {
+            'shipment_id': shipment_id
+        }
     }
 
     # Try to find customer with existing email
@@ -278,11 +312,16 @@ def pay():
     address_changed = request.args.get('address_changed')
     session['stripe'] = stripe.checkout.Session.create(**kwargs)
 
-    return render_template('shop/pay.html', address_changed=address_changed)
+    total = sum(i['amount'] for i in items)
+    return render_template('shop/pay.html',
+            total=total,
+            items=items,
+            shipping=session['shipping'],
+            address_changed=address_changed)
 
 @bp.route('/checkout/success')
 def checkout_success():
-    for k in ['cart', 'plan', 'stripe', 'order']:
+    for k in ['cart', 'plan', 'stripe', 'shipping']:
         if k in session: del session[k]
     return render_template('shop/thanks.html')
 
@@ -330,7 +369,7 @@ def subscribe_invoice_hook():
                 # Calculate shipping estimate
                 prod_id = prod['metadata']['shipped_product_id']
                 product = stripe.Product.retrieve(prod_id)
-                rate = get_shipping_rate(product, addr)
+                rate, _ = get_shipping_rate([(product, 1)], addr)
 
                 # Add the item to this invoice
                 stripe.InvoiceItem.create(
@@ -386,50 +425,39 @@ def checkout_completed_hook():
             return '', 200
 
         else:
-            # Get associated order,
+            # Get associated payment,
             # check its state
-            order_id = session['client_reference_id']
-            order = stripe.Order.retrieve(order_id)
-            if order['status'] != 'created':
+            pi = stripe.PaymentIntent.retrieve(session['payment_intent'])
+            if pi['status'] != 'succeeded':
                 return '', 200
-
-            # Already paid
-            if order['metadata'].get('payment') != None:
-                return '', 200
-
-            # Associate payment id with this order
-            stripe.Order.modify(order_id,
-                                # status='paid', # Stripe does not let you go from created->paid
-                                metadata={'payment': session['payment_intent']})
-
-            # print(session)
-            # print(order)
 
             customer_id = session['customer']
             customer = stripe.Customer.retrieve(customer_id)
             customer_email = customer['email']
 
-            # Create shipping label
-            shipment = easypost.Shipment.retrieve(order.id)
-            rate = next(r for r in shipment.rates if r['id'] == order.selected_shipping_method)
+            # Purchase shipping label
+            shipment_id = session['metadata']['shipment_id']
+            shipment = easypost.Shipment.retrieve(shipment_id)
+            rate = min(shipment.rates, key=lambda r: float(r.rate))
             shipment.buy(rate=rate)
-            # print(shipment)
 
+            line_items = stripe.checkout.Session.list_line_items(session['id'], limit=100)['data']
             items = [{
-                'amount': i['amount'],
+                'amount': i['amount_total'],
                 'quantity': i['quantity'],
                 'description': i['description']
-            } for i in  order['items']]
+            } for i in  line_items]
 
             # Notify fulfillment person
             label_url = shipment.postage_label.label_url
             send_email(new_order_recipients,
                        'New order placed', 'new_order',
-                       order=order, items=items, label_url=label_url)
+                       order=pi, items=items, label_url=label_url)
 
             # Notify customer
             tracking_url = shipment.tracker.public_url
-            send_email([customer_email], 'Thank you for your order', 'complete_order', order=order, items=items, tracking_url=tracking_url)
+            send_email([customer_email], 'Thank you for your order', 'complete_order',
+                    order=pi, items=items, tracking_url=tracking_url)
     return '', 200
 
 
@@ -481,7 +509,7 @@ def subscribe():
             plan_prod = stripe.Product.retrieve(prod_id)
             prod_id = plan_prod['metadata']['shipped_product_id']
             product = stripe.Product.retrieve(prod_id)
-            rate = get_shipping_rate(product, addr)
+            rate, _ = get_shipping_rate([(product, 1)], addr)
             line_items.append({
                 'name': 'Shipping',
                 'description': 'Shipping',
@@ -523,8 +551,12 @@ def subscribe():
 
     session['stripe'] = stripe.checkout.Session.create(**kwargs)
 
+    total = sum(i['amount'] for i in line_items) + session['plan']['amount']
     address_changed = request.args.get('address_changed')
-    return render_template('shop/subscribe.html', address_changed=address_changed, line_items=line_items, **session['plan'])
+    return render_template('shop/subscribe.html',
+            total=total,
+            address_changed=address_changed,
+            line_items=line_items, **session['plan'])
 
 
 @bp.route('/subscribe/address', methods=['GET', 'POST'])

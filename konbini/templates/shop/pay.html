@@ -7,9 +7,9 @@
     <div>
         <table>
             <tbody>
-                {% for item in session.order['items'] %}
+                {% for item in items %}
                     <tr>
-                        <td>{{ item.description }}</td>
+                        <td>{{ item.name }}</td>
                         <td>{{ item.quantity or '' }}</td>
                         <td>{{ '${:,.2f}'.format(item.amount/100) }}</td>
                     </tr>
@@ -17,7 +17,7 @@
                 <tr>
                     <td>Total</td>
                     <td></td>
-                    <td>{{ '${:,.2f}'.format(session.order.amount/100) }}</td>
+                    <td>{{ '${:,.2f}'.format(total/100) }}</td>
                 </tr>
             </tbody>
         </table>
@@ -27,13 +27,13 @@
         <div class="checkout--warning">Your address was normalized to the one below. Please check that it's correct.</div>
     {% endif %}
     <div>
-        <div>{{ session.order.shipping.name }}</div>
-        <div>{{ session.order.shipping.address.line1 }}</div>
-        {% if session.order.shipping.address.line2 %}
-            <div>{{ session.order.shipping.address.line2 }}</div>
+        <div>{{ shipping.name }}</div>
+        <div>{{ shipping.address.line1 }}</div>
+        {% if shipping.address.line2 %}
+            <div>{{ shipping.address.line2 }}</div>
         {% endif %}
-        <div>{{ session.order.shipping.address.city }}, {{ session.order.shipping.address.state }}</div>
-        <div>{{ session.order.shipping.address.country }}, {{ session.order.shipping.address.postal_code }}</div>
+        <div>{{ shipping.address.city }}, {{ shipping.address.state }}</div>
+        <div>{{ shipping.address.country }}, {{ shipping.address.postal_code }}</div>
     </div>
     <button id="js-pay">Pay</button>
 </div>

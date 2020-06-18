@@ -12,6 +12,7 @@ Current setup is basically as follows:
                 - <https://community.lightspeedhq.com/en/discussion/1214/how-does-shipping-api-handle-multiple-pieces-in-one-shipment>
                 - <https://pypi.org/project/py3dbp/>
                 - <https://pypi.org/project/pyShipping/>
+                - **NOTE**: You must specify package dimensions as product metadata now, since Stripe does not officially support it anymore. This requires the following metadata values to be set: `'height', 'weight', 'length', 'width'` (inches and oz).
             - In any case, we then take the line items from this order and pass them to `stripe.Session` (which seems to be the recommended payment flow now) to use Stripe's Checkout feature. We use that to make the actual charge.
         - We have a webhook setup for successful checkouts, for the `checkout.session.completed` event. Note this fires for any successful checkout, whether for a product or a subscription, so we have to first determine which it is.
             - If it's a product checkout, we look for the associated order and then mark it as "paid" and also attach the associated payment intent ID (from the `stripe.Session`) so we can find it if need be.

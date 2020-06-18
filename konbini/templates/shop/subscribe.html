@@ -8,7 +8,7 @@
         <tbody>
             <tr>
                 <td>{{ name }}</td>
-                <td>{{ price }}</td>
+                <td>{{ '${:,.2f}'.format(amount/100) }}</td>
             </tr>
             {% for item in line_items %}
                 <tr>
@@ -16,6 +16,10 @@
                     <td>{{ '${:,.2f}'.format(item.amount/100 * item.quantity) }}</td>
                 </tr>
             {% endfor %}
+            <tr>
+                <td>Total</td>
+                <td>{{ '${:,.2f}'.format(total/100) }}</td>
+            </tr>
         </tbody>
     </table>
 

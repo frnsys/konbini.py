@@ -1,9 +1,10 @@
 {% extends 'layout.html' %}
 
-{% macro set_quantity(icon, sku, name, quantity) %}
+{% macro set_quantity(icon, sku, name, product, quantity) %}
     <form class="cart--update-quantity" action="{{ url_for('shop.cart') }}" method="POST">
         <input type='hidden' name='sku' value={{ sku }}>
         <input type='hidden' name='name' value={{ name }}>
+        <input type='hidden' name='product' value={{ product }}>
         <input type='hidden' name='quantity' value={{ quantity }}>
         <input type="submit" value={{ icon }}>
     </form>
@@ -17,11 +18,12 @@
             <tbody>
                 {% for id, quantity in session['cart'].items() %}
                     {% set name = session['meta'][id]['name'] %}
+                    {% set product = session['meta'][id]['product_id'] %}
                     <tr>
                         <td>{{ name }}</td>
-                        <td class='cart--update-quantity-symbol'>{{ set_quantity('➖', id, name, quantity-1) }}</td>
+                        <td class='cart--update-quantity-symbol'>{{ set_quantity('➖', id, name, product, quantity-1) }}</td>
                         <td class='cart--quantity'>{{ quantity }}</td>
-                        <td class='cart--update-quantity-symbol'>{{ set_quantity('➕', id, name, quantity+1) }}</td>
+                        <td class='cart--update-quantity-symbol'>{{ set_quantity('➕', id, name, product, quantity+1) }}</td>
                         <td>{{ '${:,.2f}'.format(session['meta'][id]['price']/100 * quantity) }} {{ set_quantity('🗑', id, name, 0) }}</td>
                     </tr>
                 {% endfor %}
