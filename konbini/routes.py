@@ -112,19 +112,10 @@ def normalize_address(address):
 @bp.route('/')
 def index():
     products = core.get_products()
-    plans = core.get_plans()
     if request.args.get('format') == 'json':
-        return jsonify(products=products, plans=plans)
+        return jsonify(products=products)
     else:
-        return render_template('shop/index.html', products=products, plans=plans)
-
-@bp.route('/products')
-def products():
-    products = core.get_products()
-    if request.args.get('format') == 'json':
-        return jsonify(results=products)
-    else:
-        return render_template('shop/products.html', products=products)
+        return render_template('shop/index.html', products=products)
 
 @bp.route('/product/<id>')
 def product(id):
@@ -135,33 +126,22 @@ def product(id):
         current_app.logger.debug(str(err))
         abort(404)
     if product is None or not product.active: abort(404)
-    skus = stripe.SKU.list(limit=100, product=id, active=True)['data']
-    images = product.images + [s.image for s in skus if s.image and s.image not in product.images]
-    for sku in skus:
-        sku['in_stock'] = is_in_stock(sku)
-    if request.args.get('format') == 'json':
-        return jsonify(product=product, skus=skus, images=images)
+    if product.type == 'good':
+        skus = stripe.SKU.list(limit=100, product=id, active=True)['data']
+        images = product.images + [s.image for s in skus if s.image and s.image not in product.images]
+        for sku in skus:
+            sku['in_stock'] = is_in_stock(sku)
+        if request.args.get('format') == 'json':
+            return jsonify(product=product, skus=skus, images=images)
+        else:
+            return render_template('shop/product.html', product=product, skus=skus, images=images)
     else:
-        return render_template('shop/product.html', product=product, skus=skus, images=images)
+        prices = stripe.Price.list(limit=100, product=id, active=True)['data']
+        if request.args.get('format') == 'json':
+            return jsonify(product=product, prices=prices, images=product.images)
+        else:
+            return render_template('shop/product.html', product=product, prices=prices, images=product.images)
 
-@bp.route('/plans')
-def plans():
-    plans = core.get_plans()
-    if request.args.get('format') == 'json':
-        return jsonify(results=plans)
-    else:
-        return render_template('shop/plans.html', plans=plans)
-
-@bp.route('/plans/<id>')
-def plan(id):
-    id = 'prod_{}'.format(id)
-    product = stripe.Product.retrieve(id)
-    if product is None or not product.active: abort(404)
-    plans = stripe.Plan.list(limit=100, product=id, active=True)['data']
-    if request.args.get('format') == 'json':
-        return jsonify(product=product, plans=plans)
-    else:
-        return render_template('shop/plan.html', product=product, plans=plans)
 
 @bp.route('/cart', methods=['GET', 'POST'])
 def cart():
@@ -200,16 +180,15 @@ def cart():
             price = sku.price
             interval = None
             interval_count = None
-        elif sku_id.startswith('plan_'):
-            sku = stripe.Plan.retrieve(sku_id)
-            price = sku.amount
-            interval = sku.interval
-            interval_count = sku.interval_count
         elif sku_id.startswith('price_'):
             sku = stripe.Price.retrieve(sku_id)
             price = sku.unit_amount
-            interval = sku.recurring.interval
-            interval_count = sku.recurring.interval_count
+            if sku.recurring:
+                interval = sku.recurring.interval
+                interval_count = sku.recurring.interval_count
+            else:
+                interval = None
+                interval_count = None
 
         session['meta'][sku_id] = {
             'name': name,
@@ -458,27 +437,25 @@ def checkout_completed_hook():
 def subscribe():
     if request.method == 'POST':
         name = request.form['name']
-        price = request.form['price']
-        plan_id = request.form['id']
+        price_id = request.form['sku']
 
         try:
-            plan = stripe.Plan.retrieve(plan_id)
+            price = stripe.Price.retrieve(price_id)
         except stripe.error.InvalidRequestError:
-            return redirect(url_for('shop.plans'))
-        product = stripe.Product.retrieve(plan.product)
+            return redirect(url_for('shop.index'))
+        product = stripe.Product.retrieve(price.product)
 
         shipped = product.metadata.get('shipped') == 'true'
         session['plan'] = {
             'name': name,
-            'amount': plan.amount,
-            'price': price,
+            'amount': price.unit_amount,
             'prod_id': product.id,
-            'plan_id': plan_id,
+            'price_id': price_id,
             'shipped': shipped
         }
 
     if not session.get('plan'):
-        return redirect(url_for('shop.plans'))
+        return redirect(url_for('shop.index'))
 
     if session['plan']:
         # If the session requires shipping info,
@@ -529,7 +506,7 @@ def subscribe():
         'line_items': line_items,
         'subscription_data' :{
             'items': [{
-                'plan':  session['plan']['plan_id']
+                'plan':  session['plan']['price_id']
             }],
             'metadata': session['plan'].get('address')
         },
@@ -553,7 +530,7 @@ def subscribe():
 @bp.route('/subscribe/address', methods=['GET', 'POST'])
 def subscribe_address():
     if not session.get('plan'):
-        return redirect(url_for('shop.plans'))
+        return redirect(url_for('shop.index'))
 
     form = ShippingForm()
 
@@ -582,7 +559,7 @@ def subscribe_address():
 @bp.route('/subscribe/email', methods=['GET', 'POST'])
 def subscribe_email():
     if not session.get('plan'):
-        return redirect(url_for('shop.plans'))
+        return redirect(url_for('shop.index'))
 
     form = EmailForm()
     if form.validate_on_submit():
