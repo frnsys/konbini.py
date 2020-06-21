@@ -177,7 +177,7 @@ def cart():
     sku_id = request.form['sku']
     product_id = request.form['product']
     quantity = request.form.get('quantity')
-    if quantity is not None:
+    if quantity and quantity is not None:
         quantity = int(quantity)
 
     if 'cart' not in session:
