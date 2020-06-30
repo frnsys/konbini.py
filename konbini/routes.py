@@ -341,6 +341,9 @@ def subscribe_invoice_hook():
         invoice = event['data']['object']
         # This event still gets called even if the invoice
         # is no longer in draft form, ignore to avoid errors
+        # We have to manually retrieve the latest invoice object,
+        # because the one sent to the endpoint may not be up-to-date
+        invoice = stripe.Invoice.retrieve(invoice['id'])
         if invoice['status'] != 'draft': return '', 200
 
         cus = stripe.Customer.retrieve(invoice['customer'])
