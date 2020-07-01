@@ -59,10 +59,13 @@ def get_shipping_rate(products, addr):
         for (product, quantity), dims in zip(products, package_dimensions):
             # ENH this can be improved
             # Grab first SKU to get price
-            skus = stripe.SKU.list(limit=100, product=product.id, active=True)['data']
-            if skus:
-                # Try prices
-                price = skus[0].price/100 # cents to USD
+            if product['type'] == 'good':
+                skus = stripe.SKU.list(limit=100, product=product.id, active=True)['data']
+                if skus:
+                    price = skus[0].price/100 # cents to USD
+                else:
+                    prices = stripe.Price.list(limit=100, product=product.id, active=True)['data']
+                    price = prices[0].unit_amount/100 # cents to USD
             else:
                 prices = stripe.Price.list(limit=100, product=product.id, active=True)['data']
                 price = prices[0].unit_amount/100 # cents to USD
