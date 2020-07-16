@@ -22,9 +22,9 @@ STRIPE_SECRET_KEY = 'sk_...'
 ```
 
 In the Stripe dashboard:
-- Add products and SKUs (`Orders > Products`)
-    - **Make sure you include at least one SKU for a product.**
+- Add products (`Products`)
     - When adding products, __make sure package dimensions and weights are set for each SKU to compute shipping costs__. Otherwise they will be ignored.
+        - The dimensions and weights must be set as metadata on the product. Stripe used to support them as first-class fields, but not anymore. Use the keys `height` (in), `width` (in), `length` (in), and `weight` (oz).
 - Add subscription products and plans (`Billing > Products`)
     - Note that if a subscription product requires shipping information, add a metadata field called `shipped` and set its value to `true`. **Also note that this does _not_ automatically generate shipping labels; this assumes you have your own process for shipping out subscription items.**
         - You can, however set `KONBINI_INVOICE_SUB_SHIPPING = True` to add shipping costs when a subscription payment is invoiced. This still does not create the label, though. **If you use this, you must set `KONBINI_SHIPPING_FROM` (see below) and your subscription product metadata must also have a field called `shipped_product_id` set to the product id to be shipped. This product must have package dimensions and weight defined.** Also see the note below on international shipping.
