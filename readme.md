@@ -116,7 +116,8 @@ KONBINI_SHIPPING_FROM = {
     'city': '...',
     'state': '...',
     'zip': '...',
-    'country': '...'
+    'country': '...',
+    'phone': '4153334444
 }
 ```
 
