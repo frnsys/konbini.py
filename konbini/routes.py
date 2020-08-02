@@ -173,7 +173,7 @@ def product(id):
 @bp.route('/cart', methods=['GET', 'POST'])
 def cart():
     if request.method == 'GET':
-        subtotal = sum((session['meta'][id]['price'] * q for id, q in session.get('cart', {}).items()), 0)
+        subtotal = sum((int(session['meta'][id]['price']) * q for id, q in session.get('cart', {}).items()), 0)
         return render_template('shop/cart.html', subtotal=subtotal)
 
     name = request.form['name']
