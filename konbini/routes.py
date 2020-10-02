@@ -419,15 +419,27 @@ def checkout_completed_hook():
             else:
                 shipping = {}
 
+            meta = session['metadata']
+            label_url = None
+            tracking_url = None
+            if meta['shipment_id'] is not None:
+                shipment_id = meta['shipment_id']
+                shipment = easypost.Shipment.retrieve(shipment_id)
+                rate = min(shipment.rates, key=lambda r: float(r.rate))
+                shipment.buy(rate=rate)
+
+                label_url = shipment.postage_label.label_url
+                tracking_url = shipment.tracker.public_url
+
             send_email(new_order_recipients,
                        'New subscription', 'new_subscription',
-                       subscription=sub, line_items=line_items, shipping=shipping)
+                       subscription=sub, line_items=line_items, shipping=shipping, label_url=label_url)
 
             # Notify customer
             customer = stripe.Customer.retrieve(cus_id)
             customer_email = customer['email']
             send_email([customer_email], 'Thank you for your subscription', 'complete_subscription',
-                       subscription=sub, line_items=line_items)
+                       subscription=sub, line_items=line_items, tracking_url=tracking_url)
             return '', 200
 
         else:
@@ -503,6 +515,7 @@ def subscribe():
             return redirect(url_for('shop.subscribe_email'))
 
     line_items = []
+    shipment_id = None
     if session['plan'].get('shipped'):
         addr = session['plan']['address']
         addr = {
@@ -515,7 +528,7 @@ def subscribe():
             plan_prod = stripe.Product.retrieve(prod_id)
             prod_id = plan_prod['metadata']['shipped_product_id']
             product = stripe.Product.retrieve(prod_id)
-            rate, _ = get_shipping_rate([(product, 1)], addr)
+            rate, shipment_id = get_shipping_rate([(product, 1)], addr)
             line_items.append({
                 'name': 'Shipping',
                 'description': 'Shipping',
@@ -543,6 +556,9 @@ def subscribe():
                 'plan':  session['plan']['price_id']
             }],
             'metadata': session['plan'].get('address')
+        },
+        'metadata': {
+            'shipment_id': shipment_id
         },
         'success_url': url_for('shop.checkout_success', _external=True),
         'cancel_url': url_for('shop.checkout_cancel', _external=True)

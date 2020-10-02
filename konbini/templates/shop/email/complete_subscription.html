@@ -20,6 +20,10 @@
           </tr>
       {% endfor %}
   </table>
+
+  {% if tracking_url %}
+      <div style="margin-top:20px;margin-bottom:10px;font-weight:bold;"><a href="{{ tracking_url }}">Track your package</a></div>
+  {% endif %}
 </div>
 {% endblock %}
 

@@ -10,3 +10,7 @@ Subscription #{{ subscription.id[4:] }}
 {{ item.custom.name }}
     {{ '${:,.2f}'.format(item.amount/100 * item.quantity) }}
 {% endfor %}
+
+{% if tracking_url %}
+    Track your package: {{ tracking_url }}
+{% endif %}
