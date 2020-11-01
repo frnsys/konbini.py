@@ -309,7 +309,7 @@ def subscribe_invoice_hook():
                         # Calculate shipping estimate
                         prod_id = prod['metadata']['shipped_product_id']
                         product = stripe.Product.retrieve(prod_id)
-                        rate, _ = core.get_shipping_rate([(product, 1)], addr, **current_app.config)
+                        rate, _ = core.get_shipping_rate([(product, 1)], shipping, **current_app.config)
 
                         # Add the item to this invoice
                         stripe.InvoiceItem.create(
