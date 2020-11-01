@@ -266,50 +266,59 @@ def subscribe_invoice_hook():
     )
 
     if event['type'] == 'invoice.created':
-        invoice = event['data']['object']
-        # This event still gets called even if the invoice
-        # is no longer in draft form, ignore to avoid errors
-        # We have to manually retrieve the latest invoice object,
-        # because the one sent to the endpoint may not be up-to-date
-        invoice = stripe.Invoice.retrieve(invoice['id'])
-        if invoice['status'] != 'draft': return '', 200
+        has_payment_method = cus['default_source'] is not None
 
-        cus = stripe.Customer.retrieve(invoice['customer'])
-        sub = stripe.Subscription.retrieve(invoice['subscription'])
-        prod = stripe.Product.retrieve(sub['plan']['product'])
+        # Only do the following if we can even charge
+        if has_payment_method:
+            invoice = event['data']['object']
+            # This event still gets called even if the invoice
+            # is no longer in draft form, ignore to avoid errors
+            # We have to manually retrieve the latest invoice object,
+            # because the one sent to the endpoint may not be up-to-date
+            invoice = stripe.Invoice.retrieve(invoice['id'])
+            if invoice['status'] != 'draft': return '', 200
 
-        if prod['metadata'].get('shipped') == 'true':
-            addr = cus['shipping']
-            if addr is None:
-                addr = {
-                    'name': sub['metadata']['name'],
-                    'address': sub['metadata']
-                }
+            cus = stripe.Customer.retrieve(invoice['customer'])
+            sub = stripe.Subscription.retrieve(invoice['subscription'])
+            prod = stripe.Product.retrieve(sub['plan']['product'])
 
-            # Check for applicable tax rates
-            tax_rates = stripe.TaxRate.list(limit=10)
-            app_tax = None
-            for tax in tax_rates:
-                if tax['jurisdiction'] == addr['address']['state']:
-                    app_tax = tax
-                    break
-            if app_tax is not None:
-                stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
+            if prod['metadata'].get('shipped') == 'true':
+                # Check that there is a valid address for the customer
+                shipping = cus['shipping'] or {}
+                sub_metadata = sub.get('metadata', {})
+                addr = shipping.get('address', sub_metadata)
+                name = shipping.get('name', sub_metadata.get('name', None))
+                has_customer_address = name is not None and addr and all(v != 'nan' for v in addr.values())
+                if has_customer_address:
+                    shipping = {
+                        'name': name,
+                        'address': addr
+                    }
 
-            if current_app.config.get('KONBINI_INVOICE_SUB_SHIPPING'):
-                # Calculate shipping estimate
-                prod_id = prod['metadata']['shipped_product_id']
-                product = stripe.Product.retrieve(prod_id)
-                rate, _ = core.get_shipping_rate([(product, 1)], addr, **current_app.config)
+                    # Check for applicable tax rates
+                    tax_rates = stripe.TaxRate.list(limit=10)
+                    app_tax = None
+                    for tax in tax_rates:
+                        if tax['jurisdiction'] == addr['address']['state']:
+                            app_tax = tax
+                            break
+                    if app_tax is not None:
+                        stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
 
-                # Add the item to this invoice
-                stripe.InvoiceItem.create(
-                    customer=cus['id'],
-                    invoice=invoice['id'],
-                    amount=rate,
-                    currency='usd',
-                    description='Shipping',
-                )
+                    if current_app.config.get('KONBINI_INVOICE_SUB_SHIPPING'):
+                        # Calculate shipping estimate
+                        prod_id = prod['metadata']['shipped_product_id']
+                        product = stripe.Product.retrieve(prod_id)
+                        rate, _ = core.get_shipping_rate([(product, 1)], addr, **current_app.config)
+
+                        # Add the item to this invoice
+                        stripe.InvoiceItem.create(
+                            customer=cus['id'],
+                            invoice=invoice['id'],
+                            amount=rate,
+                            currency='usd',
+                            description='Shipping',
+                        )
 
     return '', 200
 
