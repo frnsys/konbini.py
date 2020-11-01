@@ -299,7 +299,7 @@ def subscribe_invoice_hook():
                     tax_rates = stripe.TaxRate.list(limit=10)
                     app_tax = None
                     for tax in tax_rates:
-                        if tax['jurisdiction'] == addr['address']['state']:
+                        if tax['jurisdiction'] == shipping['address']['state']:
                             app_tax = tax
                             break
                     if app_tax is not None:
