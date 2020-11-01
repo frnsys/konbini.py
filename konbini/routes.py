@@ -266,22 +266,22 @@ def subscribe_invoice_hook():
     )
 
     if event['type'] == 'invoice.created':
+        invoice = event['data']['object']
+
+        # This event still gets called even if the invoice
+        # is no longer in draft form, ignore to avoid errors
+        # We have to manually retrieve the latest invoice object,
+        # because the one sent to the endpoint may not be up-to-date
+        invoice = stripe.Invoice.retrieve(invoice['id'])
+        if invoice['status'] != 'draft': return '', 200
+
+        cus = stripe.Customer.retrieve(invoice['customer'])
         has_payment_method = cus['default_source'] is not None
 
         # Only do the following if we can even charge
         if has_payment_method:
-            invoice = event['data']['object']
-            # This event still gets called even if the invoice
-            # is no longer in draft form, ignore to avoid errors
-            # We have to manually retrieve the latest invoice object,
-            # because the one sent to the endpoint may not be up-to-date
-            invoice = stripe.Invoice.retrieve(invoice['id'])
-            if invoice['status'] != 'draft': return '', 200
-
-            cus = stripe.Customer.retrieve(invoice['customer'])
             sub = stripe.Subscription.retrieve(invoice['subscription'])
             prod = stripe.Product.retrieve(sub['plan']['product'])
-
             if prod['metadata'].get('shipped') == 'true':
                 # Check that there is a valid address for the customer
                 shipping = cus['shipping'] or {}
