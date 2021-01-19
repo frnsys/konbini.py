@@ -70,22 +70,13 @@ def buy_shipment(shipment_id, products, address):
         'country': address['address']['country']
     }
 
-    shipped_products = []
-    for (product, quantity) in products:
-        shipbob_id = product.metadata.get('shipbob_inventory_id')
-        if shipbob_id is None: raise Exception('Missing shipbob_inventory_id metadata field for Stripe product')
-        shipped_products.append({
-            'id': int(shipbob_id),
-            'quantity': quantity
-        })
-
     data = {
         'shipping_method': rate['shipping_method'],
         'recipient': {
             'name': name,
             'address': addr,
         },
-        'products': shipped_products,
+        'products': products, # products already properly formatted
         'reference_id': shipment_id
 
     }

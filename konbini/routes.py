@@ -351,6 +351,7 @@ def checkout_completed_hook():
                 shipping_info = {}
 
             meta = session['metadata']
+            shipment_meta = {}
             if meta['shipment_id'] is not None:
                 shipment_id = meta['shipment_id']
                 shipment_meta = shipping.buy_shipment(shipment_id, **meta)

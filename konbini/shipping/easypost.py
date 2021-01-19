@@ -80,7 +80,7 @@ def get_shipping_rate(products, addr, **config):
     }
 
 
-def buy_shipment(shipment_id):
+def buy_shipment(shipment_id, **kwargs):
     shipment = easypost.Shipment.retrieve(shipment_id)
     rate = min(shipment.rates, key=lambda r: float(r.rate))
     shipment.buy(rate=rate)
