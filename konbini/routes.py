@@ -1,7 +1,6 @@
 import math
 import stripe
-import easypost
-from . import core
+from . import core, shipping
 from .util import send_email
 from .auth import auth_required
 from .forms import EmailForm, ShippingForm
@@ -193,7 +192,7 @@ def pay():
 
     products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id']), quantity)
             for sku_id, quantity in session['cart'].items()]
-    rate, shipment_id = core.get_shipping_rate(products, session['shipping'], **current_app.config)
+    rate, order_meta = core.get_shipping_rate(products, session['shipping'], **current_app.config)
 
     items = [{
         'currency': 'usd',
@@ -225,9 +224,7 @@ def pay():
         'line_items': items,
         'success_url': url_for('shop.checkout_success', _external=True),
         'cancel_url': url_for('shop.checkout_cancel', _external=True),
-        'metadata': {
-            'shipment_id': shipment_id
-        }
+        'metadata': order_meta
     }
 
     # Try to find customer with existing email
@@ -284,13 +281,13 @@ def subscribe_invoice_hook():
             prod = stripe.Product.retrieve(sub['plan']['product'])
             if prod['metadata'].get('shipped') == 'true':
                 # Check that there is a valid address for the customer
-                shipping = cus['shipping'] or {}
+                shipping_info = cus['shipping'] or {}
                 sub_metadata = sub.get('metadata', {})
-                addr = shipping.get('address', sub_metadata)
-                name = shipping.get('name', sub_metadata.get('name', None))
+                addr = shipping_info.get('address', sub_metadata)
+                name = shipping_info.get('name', sub_metadata.get('name', None))
                 has_customer_address = name is not None and addr and all(v != 'nan' for v in addr.values())
                 if has_customer_address:
-                    shipping = {
+                    shipping_info = {
                         'name': name,
                         'address': addr
                     }
@@ -299,7 +296,7 @@ def subscribe_invoice_hook():
                     tax_rates = stripe.TaxRate.list(limit=10)
                     app_tax = None
                     for tax in tax_rates:
-                        if tax['jurisdiction'] == shipping['address']['state']:
+                        if tax['jurisdiction'] == shipping_info['address']['state']:
                             app_tax = tax
                             break
                     if app_tax is not None:
@@ -309,7 +306,7 @@ def subscribe_invoice_hook():
                         # Calculate shipping estimate
                         prod_id = prod['metadata']['shipped_product_id']
                         product = stripe.Product.retrieve(prod_id)
-                        rate, _ = core.get_shipping_rate([(product, 1)], shipping, **current_app.config)
+                        rate, _ = core.get_shipping_rate([(product, 1)], shipping_info, **current_app.config)
 
                         # Add the item to this invoice
                         stripe.InvoiceItem.create(
@@ -348,32 +345,25 @@ def checkout_completed_hook():
             if meta:
                 name = meta.pop('name')
                 addr = meta
-                shipping = {'name': name, 'address': addr}
-                stripe.Customer.modify(cus_id, name=name, shipping=shipping)
+                shipping_info = {'name': name, 'address': addr}
+                stripe.Customer.modify(cus_id, name=name, shipping=shipping_info)
             else:
-                shipping = {}
+                shipping_info = {}
 
             meta = session['metadata']
-            label_url = None
-            tracking_url = None
             if meta['shipment_id'] is not None:
                 shipment_id = meta['shipment_id']
-                shipment = easypost.Shipment.retrieve(shipment_id)
-                rate = min(shipment.rates, key=lambda r: float(r.rate))
-                shipment.buy(rate=rate)
-
-                label_url = shipment.postage_label.label_url
-                tracking_url = shipment.tracker.public_url
+                shipment_meta = shipping.buy_shipment(shipment_id, **meta)
 
             send_email(new_order_recipients,
                        'New subscription', 'new_subscription',
-                       subscription=sub, line_items=line_items, shipping=shipping, label_url=label_url)
+                       subscription=sub, line_items=line_items, shipping=shipping_info, label_url=shipment_meta.get('label_url'))
 
             # Notify customer
             customer = stripe.Customer.retrieve(cus_id)
             customer_email = customer['email']
             send_email([customer_email], 'Thank you for your subscription', 'complete_subscription',
-                       subscription=sub, line_items=line_items, tracking_url=tracking_url)
+                       subscription=sub, line_items=line_items, tracking_url=shipment_meta.get('tracking_url'))
             return '', 200
 
         else:
@@ -388,10 +378,9 @@ def checkout_completed_hook():
             customer_email = customer['email']
 
             # Purchase shipping label
-            shipment_id = session['metadata']['shipment_id']
-            shipment = easypost.Shipment.retrieve(shipment_id)
-            rate = min(shipment.rates, key=lambda r: float(r.rate))
-            shipment.buy(rate=rate)
+            meta = session['metadata']
+            shipment_id = meta['shipment_id']
+            shipment_meta = shipping.buy_shipment(shipment_id, **meta)
 
             line_items = stripe.checkout.Session.list_line_items(session['id'], limit=100)['data']
             items = [{
@@ -401,15 +390,13 @@ def checkout_completed_hook():
             } for i in  line_items]
 
             # Notify fulfillment person
-            label_url = shipment.postage_label.label_url
             send_email(new_order_recipients,
                        'New order placed', 'new_order',
-                       order=pi, items=items, label_url=label_url)
+                       order=pi, items=items, label_url=shipment_meta.get('label_url'))
 
             # Notify customer
-            tracking_url = shipment.tracker.public_url
             send_email([customer_email], 'Thank you for your order', 'complete_order',
-                    order=pi, items=items, tracking_url=tracking_url)
+                    order=pi, items=items, tracking_url=shipment_meta.get('tracking_url'))
     return '', 200
 
 

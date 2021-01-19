@@ -1,6 +1,6 @@
 # konbini
 
-A very simple storefront (no tracking, no user accounts, etc), basically a lightweight frontend for Stripe (goods/products and services/subscriptions) that integrates with EasyPost for shipping management and Mailgun for transactional emails.
+A very simple storefront (no tracking, no user accounts, etc), basically a lightweight frontend for Stripe (goods/products and services/subscriptions) that integrates with EasyPost or ShipBob for shipping management and Mailgun for transactional emails.
 
 `konbini` supports both domestic (US) and international shipping (disabled by default, see below), but has very limited support for customs.
 
@@ -41,15 +41,37 @@ STRIPE_WEBHOOK_SECRETS = {
 }
 ```
 
+### Shipping
+
 ## EasyPost
 
-Get your [EasyPost API key](https://www.easypost.com/account/api-keys) and add it to `config.py`, e.g.:
+Add this to your config:
+
+```
+KONBINI_SHIPPER = 'easypost'
+```
+
+Then get your [EasyPost API key](https://www.easypost.com/account/api-keys) and add it to `config.py`, e.g.:
 
 ```
 EASYPOST_API_KEY = 'EZ...'
 ```
 
-- In Stripe, go to [`Settings > Orders`](https://dashboard.stripe.com/account/relay/settings). For Live mode (and for development, Test mode), change `Shipping` to `Provider > EasyPost` and paste in the API key (production key for Live mode, and test key for Test mode).
+## ShipBob
+
+Add this to your config:
+
+```
+KONBINI_SHIPPER = 'shipbob'
+```
+
+Then get your [ShipBob API key](https://developer.shipbob.com/) and add it to `config.py`, e.g.:
+
+```
+SHIPBOB_API_KEY = '...'
+```
+
+Add your products to ShipBob and then in Stripe for each of your products you must add a new metadata field called `shipbob_inventory_id` and set it to the corresponding ShipBob inventory ID for that product.
 
 ## Taxes
 
@@ -66,8 +88,6 @@ TAXES = [{
 ```
 
 When a product (non-subscription) checkout occurs, the tax amount will be computed using the first matching tax. For subscriptions, see the Stripe setup above.
-
-In Stripe, go to [`Settings > Orders`](https://dashboard.stripe.com/account/relay/settings). For Live mode (and for development, Test mode), change `Taxes` to `Callback` and in the `Callback` field add `https://yoursite/shop/checkout/tax` (change `shop` as needed to your `KONBINI_URL_PREFIX`).
 
 Stripe does provide integrations with paid tax calculation services which are probably better if your situation is more complex.
 
@@ -123,7 +143,9 @@ KONBINI_SHIPPING_FROM = {
 
 # International shipping
 
-To enable very, very basic support for international shipping, add this to your config:
+I believe ShipBob handles international shipping and customs for you.
+
+If you're using EasyPost, `konbini` provides very, very basic support for international shipping. To use it, add this to your config:
 
 ```
 KONBINI_INTL_SHIPPING = True
