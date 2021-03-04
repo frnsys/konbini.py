@@ -195,7 +195,7 @@ def pay():
 
     products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id']), quantity)
             for sku_id, quantity in session['cart'].items()]
-    rate, order_meta = core.get_shipping_rate(products, session['shipping'], **current_app.config)
+    rate, order_meta = shipping.get_shipping_rate(products, session['shipping'], **current_app.config)
 
     items = [{
         'currency': 'usd',
@@ -313,7 +313,7 @@ def subscribe_invoice_hook():
                         # Calculate shipping estimate
                         prod_id = prod['metadata']['shipped_product_id']
                         product = stripe.Product.retrieve(prod_id)
-                        rate, _ = core.get_shipping_rate([(product, 1)], shipping_info, **current_app.config)
+                        rate, _ = shipping.get_shipping_rate([(product, 1)], shipping_info, **current_app.config)
 
                         # Add the item to this invoice
                         stripe.InvoiceItem.create(
@@ -457,7 +457,7 @@ def subscribe():
             plan_prod = stripe.Product.retrieve(prod_id)
             prod_id = plan_prod['metadata']['shipped_product_id']
             product = stripe.Product.retrieve(prod_id)
-            rate, shipment_id = core.get_shipping_rate([(product, 1)], addr, **current_app.config)
+            rate, shipment_id = shipping.get_shipping_rate([(product, 1)], addr, **current_app.config)
             line_items.append({
                 'name': 'Shipping',
                 'description': 'Shipping',
