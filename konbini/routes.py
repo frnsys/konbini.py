@@ -132,8 +132,10 @@ def cart():
             price = sku.price
             interval = None
             interval_count = None
+            exclude_tax = sku.metadata.get('exclude_tax') == 'true'
         elif sku_id.startswith('price_'):
             sku = stripe.Price.retrieve(sku_id)
+            exclude_tax = sku.metadata.get('exclude_tax') == 'true'
             price = sku.unit_amount
             if sku.recurring:
                 interval = sku.recurring.interval
@@ -147,7 +149,8 @@ def cart():
             'price': price,
             'interval': interval,
             'interval_count': interval_count,
-            'product_id': product_id
+            'product_id': product_id,
+            'exclude_tax': exclude_tax,
         }
 
     if added:
@@ -199,6 +202,7 @@ def pay():
         'name': session['meta'][sku_id]['name'],
         'amount': session['meta'][sku_id]['price'],
         'quantity': quantity,
+        'exclude_tax': session['meta'][sku_id]['exclude_tax'],
     } for sku_id, quantity in session['cart'].items()]
 
     items.append({
@@ -206,15 +210,17 @@ def pay():
         'name': 'Shipping',
         'amount': rate,
         'quantity': 1,
+        'exclude_tax': True
     })
     total = sum(i['amount'] for i in items)
+    tax_total = sum(i['amount'] for i in items if not i['exclude_tax'])
 
     tax_rates = stripe.TaxRate.list(limit=10)
     for tax in tax_rates:
         if tax['jurisdiction'] == session['shipping']['address']['state']:
             items.append({
                 'name': 'Tax',
-                'amount': math.ceil((tax.percentage/100) * total),
+                'amount': math.ceil((tax.percentage/100) * tax_total),
                 'currency': 'usd',
                 'quantity': 1
             })
@@ -293,14 +299,15 @@ def subscribe_invoice_hook():
                     }
 
                     # Check for applicable tax rates
-                    tax_rates = stripe.TaxRate.list(limit=10)
-                    app_tax = None
-                    for tax in tax_rates:
-                        if tax['jurisdiction'] == shipping_info['address']['state']:
-                            app_tax = tax
-                            break
-                    if app_tax is not None:
-                        stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
+                    if not prod['metadata'].get('exclude_tax') == 'true':
+                        tax_rates = stripe.TaxRate.list(limit=10)
+                        app_tax = None
+                        for tax in tax_rates:
+                            if tax['jurisdiction'] == shipping_info['address']['state']:
+                                app_tax = tax
+                                break
+                        if app_tax is not None:
+                            stripe.Invoice.modify(invoice['id'], default_tax_rates=[app_tax.id])
 
                     if current_app.config.get('KONBINI_INVOICE_SUB_SHIPPING'):
                         # Calculate shipping estimate
