@@ -489,6 +489,7 @@ def subscribe():
         'metadata': {
             'shipment_id': shipment_id
         },
+        'allow_promotion_codes': True,
         'success_url': url_for('shop.checkout_success', _external=True),
         'cancel_url': url_for('shop.checkout_cancel', _external=True)
     }
