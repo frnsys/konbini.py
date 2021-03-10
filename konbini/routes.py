@@ -202,7 +202,7 @@ def pay():
         'name': session['meta'][sku_id]['name'],
         'amount': session['meta'][sku_id]['price'],
         'quantity': quantity,
-        'exclude_tax': session['meta'][sku_id]['exclude_tax'],
+        # 'exclude_tax': session['meta'][sku_id]['exclude_tax'],
     } for sku_id, quantity in session['cart'].items()]
 
     items.append({
@@ -210,10 +210,14 @@ def pay():
         'name': 'Shipping',
         'amount': rate,
         'quantity': 1,
-        'exclude_tax': True
+        # 'exclude_tax': True
     })
     total = sum(i['amount'] for i in items)
     tax_total = sum(i['amount'] for i in items if not i['exclude_tax'])
+
+    # Can't pass this to the session
+    for i in items:
+        del i['exclude_tax']
 
     tax_rates = stripe.TaxRate.list(limit=10)
     for tax in tax_rates:
