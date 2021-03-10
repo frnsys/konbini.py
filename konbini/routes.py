@@ -196,6 +196,7 @@ def pay():
     products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id']), quantity)
             for sku_id, quantity in session['cart'].items()]
     rate, order_meta = shipping.get_shipping_rate(products, session['shipping'], **current_app.config)
+    order_meta['address'] = session['shipping']['address']
 
     items = [{
         'currency': 'usd',
@@ -491,7 +492,8 @@ def subscribe():
             'metadata': session['plan'].get('address')
         },
         'metadata': {
-            'shipment_id': shipment_id
+            'shipment_id': shipment_id,
+            'address': session['plan'].get('address')
         },
         'allow_promotion_codes': True,
         'success_url': url_for('shop.checkout_success', _external=True),
