@@ -196,7 +196,8 @@ def pay():
     products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id']), quantity)
             for sku_id, quantity in session['cart'].items()]
     rate, order_meta = shipping.get_shipping_rate(products, session['shipping'], **current_app.config)
-    order_meta['address'] = session['shipping']['address']
+    for k, v in session['shipping']['address'].items():
+        order_meta['address_{}'.format(k)] = v
 
     items = [{
         'currency': 'usd',
