@@ -366,8 +366,8 @@ def checkout_completed_hook():
             meta = session['metadata']
             shipment_meta = {}
             if meta['shipment_id'] is not None:
-                shipment_id = meta['shipment_id']
-                shipment_meta = shipping.buy_shipment(shipment_id, **meta)
+                # shipment_id = meta['shipment_id']
+                shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
 
             send_email(new_order_recipients,
                        'New subscription', 'new_subscription',
@@ -393,8 +393,8 @@ def checkout_completed_hook():
 
             # Purchase shipping label
             meta = session['metadata']
-            shipment_id = meta['shipment_id']
-            shipment_meta = shipping.buy_shipment(shipment_id, **meta)
+            # shipment_id = meta['shipment_id']
+            shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
 
             line_items = stripe.checkout.Session.list_line_items(session['id'], limit=100)['data']
             items = [{
