@@ -97,7 +97,7 @@ def product(id):
 @bp.route('/cart', methods=['GET', 'POST'])
 def cart():
     if request.method == 'GET':
-        subtotal = sum((int(session['meta'][id]['price']) * q for id, q in session.get('cart', {}).items()), 0)
+        subtotal = sum((int(session['meta'][id]['price']) * q for id, q in session.get('cart', {}).items() if q), 0)
         return render_template('shop/cart.html', subtotal=subtotal)
 
     name = request.form['name']
@@ -122,7 +122,7 @@ def cart():
         session['meta'] = {}
 
     # Delete item from cart if quantity is 0
-    if quantity == 0:
+    if quantity == 0 or not quantity:
         del session['cart'][sku_id]
 
     # Otherwise, update product info
