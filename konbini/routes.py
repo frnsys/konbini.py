@@ -122,7 +122,7 @@ def cart():
         session['meta'] = {}
 
     # Delete item from cart if quantity is 0
-    if quantity == 0 or not quantity:
+    if quantity == 0 or quantity == '':
         del session['cart'][sku_id]
 
     # Otherwise, update product info
