@@ -22,7 +22,7 @@ def get_shipping_rates(products, addr):
         'products': products,
     }
     resp = requests.post('https://api.shipbob.com/1.0/order/estimate', json=data, headers={
-        'Authorization': 'bearer {}'.format(current_app['SHIPBOB_API_KEY'])
+        'Authorization': 'bearer {}'.format(current_app.config['SHIPBOB_API_KEY'])
     })
     resp.raise_for_status()
     data = resp.json()
@@ -81,7 +81,7 @@ def buy_shipment(shipment_id, products, address):
 
     }
     resp = requests.post('https://api.shipbob.com/1.0/order', json=data, headers={
-        'Authorization': 'bearer {}'.format(current_app['SHIPBOB_API_KEY'])
+        'Authorization': 'bearer {}'.format(current_app.config['SHIPBOB_API_KEY'])
     })
     resp.raise_for_status()
 
