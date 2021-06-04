@@ -22,9 +22,13 @@ def get_shipping_rates(products, addr):
         'products': products,
     }
     resp = requests.post('https://api.shipbob.com/1.0/order/estimate', json=data, headers={
+        'shipbob_channel_id': current_app.config['SHIPBOB_CHANNEL_ID'],
         'Authorization': 'bearer {}'.format(current_app.config['SHIPBOB_API_KEY'])
     })
-    resp.raise_for_status()
+    try:
+        resp.raise_for_status()
+    except:
+        raise Exception('{} for {}: {}'.format(resp.status_code, resp.url, resp.json()))
     data = resp.json()
     return data['estimates']
 
@@ -81,9 +85,13 @@ def buy_shipment(shipment_id, products, address):
 
     }
     resp = requests.post('https://api.shipbob.com/1.0/order', json=data, headers={
+        'shipbob_channel_id': current_app.config['SHIPBOB_CHANNEL_ID'],
         'Authorization': 'bearer {}'.format(current_app.config['SHIPBOB_API_KEY'])
     })
-    resp.raise_for_status()
+    try:
+        resp.raise_for_status()
+    except:
+        raise Exception('{} for {}: {}'.format(resp.status_code, resp.url, resp.json()))
 
     data = resp.json()
     tracking_url = data['shipments'][0]['tracking']['tracking_url']

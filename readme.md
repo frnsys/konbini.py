@@ -70,6 +70,7 @@ Then get your [ShipBob API key](https://developer.shipbob.com/) and add it to `c
 
 ```
 SHIPBOB_API_KEY = '...'
+SHIPBOB_CHANNEL_ID = '...'
 ```
 
 Add your products to ShipBob and then in Stripe for each of your products you must add a new metadata field called `shipbob_inventory_id` and set it to the corresponding ShipBob inventory ID for that product.
