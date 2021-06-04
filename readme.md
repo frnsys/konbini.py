@@ -73,7 +73,18 @@ SHIPBOB_API_KEY = '...'
 SHIPBOB_CHANNEL_ID = '...'
 ```
 
+The channel ID can be retrieved like so:
+
+```
+resp = requests.get(
+    'https://api.shipbob.com/1.0/channel',
+    headers={'Authorization': 'bearer {}'.format(shipbob_api_key)})
+resp.json()
+```
+
 Add your products to ShipBob and then in Stripe for each of your products you must add a new metadata field called `shipbob_inventory_id` and set it to the corresponding ShipBob inventory ID for that product.
+
+I advise against using ShipBob because honestly it's garbage (at least on the dev side).
 
 ## Taxes
 
