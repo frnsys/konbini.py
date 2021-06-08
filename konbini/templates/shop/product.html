@@ -13,7 +13,7 @@
         <h1>{{ product.name }}</h1>
         <p>{{ product.description }}</p>
         <div class="product--skus">
-            {% if skus|length == 0 %}
+            {% if skus|length == 0 and prices|length == 0 %}
                 <div>Not currently available.</div>
             {% endif %}
             {% for sku in skus %}

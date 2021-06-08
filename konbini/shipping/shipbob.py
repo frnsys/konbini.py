@@ -101,7 +101,7 @@ def buy_shipment(shipment_id, **kwargs):
     address = {}
     for key, val in kwargs.items():
         if key.startswith('address_'):
-            _, k = key.split('_', 0)
+            _, k = key.split('_', 1)
             address[k] = val
 
     name = address['name']
