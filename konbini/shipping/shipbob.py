@@ -15,8 +15,8 @@ def inventory_items_to_products(inventory_items):
     # Fetch products from the Default ShipBob channel
     product_data = {}
     default_channel_headers = {
-        'shipbob_channel_id': SHIPBOB_DEFAULT_CHANNEL_ID,
-        'Authorization': 'bearer {}'.format(SHIPBOB_API_KEY)
+        'shipbob_channel_id': current_app.config['SHIPBOB_DEFAULT_CHANNEL_ID'],
+        'Authorization': 'bearer {}'.format(current_app.config['SHIPBOB_API_KEY'])
     }
     resp = requests.get('https://api.shipbob.com/1.0/product', headers=default_channel_headers)
     all_products = resp.json()
