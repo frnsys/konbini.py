@@ -463,7 +463,8 @@ def subscribe():
             plan_prod = stripe.Product.retrieve(prod_id)
             prod_id = plan_prod['metadata']['shipped_product_id']
             product = stripe.Product.retrieve(prod_id)
-            rate, shipment_id = shipping.get_shipping_rate([(product, 1)], addr, **current_app.config)
+            rate, order_meta = shipping.get_shipping_rate([(product, 1)], addr, **current_app.config)
+            shipment_id = order_meta['shipment_id']
             line_items.append({
                 'name': 'Shipping',
                 'description': 'Shipping',

@@ -89,8 +89,6 @@ def get_shipping_rate(products, addr, **config):
     shipment_id = str(uuid.uuid4()).replace('-', '')
     return rate, {
         'shipment_id': shipment_id,
-        'address': addr,
-        'products': shipped_products
     }
 
 
