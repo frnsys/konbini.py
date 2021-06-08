@@ -1,4 +1,5 @@
 import math
+import json
 import uuid
 import requests
 from flask import current_app
@@ -89,10 +90,20 @@ def get_shipping_rate(products, addr, **config):
     shipment_id = str(uuid.uuid4()).replace('-', '')
     return rate, {
         'shipment_id': shipment_id,
+        'products': json.dumps(shipped_products)
     }
 
 
-def buy_shipment(shipment_id, products, address):
+def buy_shipment(shipment_id, **kwargs):
+    products = json.loads(kwargs['products'])
+
+    # Reconstruct the address from the order metadata
+    address = {}
+    for key, val in kwargs.items():
+        if key.startswith('address_'):
+            _, k = key.split('_', 0)
+            address[k] = val
+
     name = address['name']
     products = inventory_items_to_products(products)
     rates = _get_shipping_rates(products, address)
