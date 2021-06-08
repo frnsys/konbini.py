@@ -6,20 +6,32 @@ from flask import current_app
 
 
 def inventory_items_to_products(inventory_items):
-    """This makes the assumption that there is a one-to-one mapping
-    between inventory items and products. This assumption should hold
-    because the only way to create additional products for a given
-    inventory item is through the API, which we aren't doing.
-    We dynamically get this instead of just storing product ids
-    on the Stripe products' metadata bceause there is no way
-    to get product ids from the dashboard. The only way is through the API
-    and I don't want to have to re-fetch product ids every time someone
-    adds a new product to Stripe."""
+    """There is a decent amount of overhead with
+    these extra network calls, but ShipBob does not provide
+    a more streamlined way (their entire API is horribly designed),
+    so this is how we have to do it.
+    """
+
+    # Fetch products from the Default ShipBob channel
+    product_data = {}
+    default_channel_headers = {
+        'shipbob_channel_id': SHIPBOB_DEFAULT_CHANNEL_ID,
+        'Authorization': 'bearer {}'.format(SHIPBOB_API_KEY)
+    }
+    resp = requests.get('https://api.shipbob.com/1.0/product', headers=default_channel_headers)
+    all_products = resp.json()
+    for p in all_products:
+        for item in p['fulfillable_inventory_items']:
+            inv_id = item['id']
+            product_data[inv_id] = {'sku': p['sku'], 'name': p['name']}
+
+    # Fetch products from the store-specific ShipBob channel
     mapping = {}
-    resp = requests.get('https://api.shipbob.com/1.0/product', headers={
+    headers = {
         'shipbob_channel_id': current_app.config['SHIPBOB_CHANNEL_ID'],
         'Authorization': 'bearer {}'.format(current_app.config['SHIPBOB_API_KEY'])
-    })
+    }
+    resp = requests.get('https://api.shipbob.com/1.0/product', headers=headers)
     all_products = resp.json()
     for p in all_products:
         for item in p['fulfillable_inventory_items']:
@@ -29,12 +41,30 @@ def inventory_items_to_products(inventory_items):
     products = []
     for item in inventory_items:
         try:
-            products.append({
-                'id': mapping[item['id']],
-                'quantity': item['quantity']
-            })
+            product_id = mapping[item['id']]
         except KeyError:
-            raise Exception('No product found for inventory id "{}"'.format(item['id']))
+            # Get the default product id and then create a new one
+            # in the store channel
+            data = product_data[item['id']]
+
+            # Create the necessary product
+            resp = requests.post('https://api.shipbob.com/1.0/product', json={
+                'sku': data['sku'],
+                'reference_id': data['sku'],
+                'name': data['name']
+            }, headers=headers)
+            try:
+                resp.raise_for_status()
+            except:
+                raise Exception('{} for {}: {}'.format(resp.status_code, resp.url, resp.content))
+            product_id = resp.json()['id']
+            mapping[item['id']] = product_id
+
+            # raise Exception('No product found for inventory id "{}"'.format(item['id']))
+        products.append({
+            'id': product_id,
+            'quantity': item['quantity']
+        })
     return products
 
 

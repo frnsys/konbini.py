@@ -60,6 +60,8 @@ EASYPOST_API_KEY = 'EZ...'
 
 ## ShipBob
 
+I advise against using ShipBob because honestly it's total garbage.
+
 Add this to your config:
 
 ```
@@ -71,9 +73,10 @@ Then get your [ShipBob API key](https://developer.shipbob.com/) and add it to `c
 ```
 SHIPBOB_API_KEY = '...'
 SHIPBOB_CHANNEL_ID = '...'
+SHIPBOB_DEFAULT_CHANNEL_ID = '...'
 ```
 
-The channel ID can be retrieved like so:
+The channel IDs can be retrieved like so:
 
 ```
 resp = requests.get(
@@ -82,13 +85,12 @@ resp = requests.get(
 resp.json()
 ```
 
+`SHIPBOB_DEFAULT_CHANNEL_ID` should be set to the id of the channel named "ShipBob Default"  This channel contains whatever is created through the ShipBob dashboard.
+`SHIPBOB_CHANNEL_ID` should be set to the id of the channel of the token, which should be named "SMA".
+
 Add your products to ShipBob and then in Stripe for each of your products you must add a new metadata field called `shipbob_inventory_id` and set it to the corresponding ShipBob inventory ID for that product.
 
-I advise against using ShipBob because honestly it's total garbage.
-
-Other ShipBob tips:
-
-- Confusingly, what's listed under `Inventory > Products` in their dashboard are not, in fact, "Products" as they define them in their backend system. This lists inventory items which _need to have a SKU defined_ to have an associated Product generated automatically. There is no way in the dashboard to manually create products, or even see product IDs (which are not the same as inventory IDs). ShipBob's `order` and `estimate` endpoints both require _product_ IDs, not inventory IDs.
+Products added to ShipBob _must have a SKU defined_.
 
 ## Taxes
 
