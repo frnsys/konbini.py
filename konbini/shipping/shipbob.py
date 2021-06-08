@@ -4,7 +4,40 @@ import requests
 from flask import current_app
 
 
-def get_shipping_rates(products, addr):
+def inventory_items_to_products(inventory_items):
+    """This makes the assumption that there is a one-to-one mapping
+    between inventory items and products. This assumption should hold
+    because the only way to create additional products for a given
+    inventory item is through the API, which we aren't doing.
+    We dynamically get this instead of just storing product ids
+    on the Stripe products' metadata bceause there is no way
+    to get product ids from the dashboard. The only way is through the API
+    and I don't want to have to re-fetch product ids every time someone
+    adds a new product to Stripe."""
+    mapping = {}
+    resp = requests.get('https://api.shipbob.com/1.0/product', headers={
+        'shipbob_channel_id': current_app.config['SHIPBOB_CHANNEL_ID'],
+        'Authorization': 'bearer {}'.format(current_app.config['SHIPBOB_API_KEY'])
+    })
+    all_products = resp.json()
+    for p in all_products:
+        for item in p['fulfillable_inventory_items']:
+            inv_id = item['id']
+            mapping[inv_id] = p['id']
+
+    products = []
+    for item in inventory_items:
+        try:
+            products.append({
+                'id': mapping[item['id']],
+                'quantity': item['quantity']
+            })
+        except KeyError:
+            raise Exception('No product found for inventory id "{}"'.format(item['id']))
+    return products
+
+
+def _get_shipping_rates(products, addr):
     """
     <https://developer.shipbob.com/api-docs/#tag/Orders/paths/~1order~1estimate/post>
     """
@@ -43,7 +76,8 @@ def get_shipping_rate(products, addr, **config):
             'quantity': quantity
         })
 
-    rates = get_shipping_rates(shipped_products, addr)
+    shipped_products = inventory_items_to_products(shipped_products)
+    rates = _get_shipping_rates(shipped_products, addr)
 
     # Get cheapest rate
     rate = min(r['estimated_price'] for r in rates)
@@ -62,7 +96,8 @@ def get_shipping_rate(products, addr, **config):
 
 def buy_shipment(shipment_id, products, address):
     name = address['name']
-    rates = get_shipping_rates(products, address)
+    products = inventory_items_to_products(products)
+    rates = _get_shipping_rates(products, address)
     rate = min(rates, key=lambda r: r['estimated_price'])
 
     addr = {

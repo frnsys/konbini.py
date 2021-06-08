@@ -84,7 +84,11 @@ resp.json()
 
 Add your products to ShipBob and then in Stripe for each of your products you must add a new metadata field called `shipbob_inventory_id` and set it to the corresponding ShipBob inventory ID for that product.
 
-I advise against using ShipBob because honestly it's garbage (at least on the dev side).
+I advise against using ShipBob because honestly it's total garbage.
+
+Other ShipBob tips:
+
+- Confusingly, what's listed under `Inventory > Products` in their dashboard are not, in fact, "Products" as they define them in their backend system. This lists inventory items which _need to have a SKU defined_ to have an associated Product generated automatically. There is no way in the dashboard to manually create products, or even see product IDs (which are not the same as inventory IDs). ShipBob's `order` and `estimate` endpoints both require _product_ IDs, not inventory IDs.
 
 ## Taxes
 
