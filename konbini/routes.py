@@ -198,6 +198,7 @@ def pay():
     rate, order_meta = shipping.get_shipping_rate(products, session['shipping'], **current_app.config)
     for k, v in session['shipping']['address'].items():
         order_meta['address_{}'.format(k)] = v
+    order_meta['name'] = session['shipping']['name']
 
     items = [{
         'currency': 'usd',
@@ -361,13 +362,14 @@ def checkout_completed_hook():
                 shipping_info = {'name': name, 'address': addr}
                 stripe.Customer.modify(cus_id, name=name, shipping=shipping_info)
             else:
+                name = ''
                 shipping_info = {}
 
             meta = session['metadata']
             shipment_meta = {}
             if meta['shipment_id'] is not None:
                 # shipment_id = meta['shipment_id']
-                shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
+                shipment_meta = shipping.buy_shipment(name=name, **meta) # shipment_id already in meta
 
             send_email(new_order_recipients,
                        'New subscription', 'new_subscription',
