@@ -62,7 +62,7 @@ def _get_shipping_rates(products, addr):
     try:
         resp.raise_for_status()
     except:
-        raise Exception('{} for {}: {}'.format(resp.status_code, resp.url, resp.json()))
+        raise Exception('{} for {}: {}'.format(resp.status_code, resp.url, resp.content))
     data = resp.json()
     return data['estimates']
 
@@ -117,7 +117,7 @@ def buy_shipment(shipment_id, **kwargs):
         'address2': address['address'].get('line2'),
         'city': address['address']['city'],
         'state': address['address']['state'],
-        'zip': address['address']['postal_code'],
+        'zip_code': address['address']['postal_code'],
         'country': address['address']['country']
     }
 
@@ -138,7 +138,7 @@ def buy_shipment(shipment_id, **kwargs):
     try:
         resp.raise_for_status()
     except:
-        raise Exception('{} for {}: {}'.format(resp.status_code, resp.url, resp.json()))
+        raise Exception('{} for {}: {}'.format(resp.status_code, resp.url, resp.content))
 
     data = resp.json()
     tracking_url = data['shipments'][0]['tracking']['tracking_url']
