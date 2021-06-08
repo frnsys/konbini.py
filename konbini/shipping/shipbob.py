@@ -108,7 +108,7 @@ def buy_shipment(shipment_id, **kwargs):
 
     name = kwargs['name']
     products = inventory_items_to_products(products)
-    rates = _get_shipping_rates(products, address)
+    rates = _get_shipping_rates(products, {'address': address})
     rate = min(rates, key=lambda r: r['estimated_price'])
 
     addr = {
