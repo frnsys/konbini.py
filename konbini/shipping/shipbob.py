@@ -46,7 +46,7 @@ def _get_shipping_rates(products, addr):
         'address2': addr['address'].get('line2'),
         'city': addr['address']['city'],
         'state': addr['address']['state'],
-        'zip': addr['address']['postal_code'],
+        'zip_code': addr['address']['postal_code'],
         'country': addr['address']['country']
     }
 
