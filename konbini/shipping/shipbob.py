@@ -105,10 +105,11 @@ def buy_shipment(shipment_id, **kwargs):
         if key.startswith('address_'):
             _, k = key.split('_', 1)
             address[k] = val
+    address = {'address': address}
 
     name = kwargs['name']
     products = inventory_items_to_products(products)
-    rates = _get_shipping_rates(products, {'address': address})
+    rates = _get_shipping_rates(products, address)
     rate = min(rates, key=lambda r: r['estimated_price'])
 
     addr = {
