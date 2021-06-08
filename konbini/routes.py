@@ -386,7 +386,7 @@ def checkout_completed_hook():
             # Get associated payment,
             # check its state
             pi = stripe.PaymentIntent.retrieve(session['payment_intent'])
-            if pi['status'] != 'succeeded':
+            if pi['status'] != 'succeeded' or pi['charges']['data'][0]['refunded']:
                 return '', 200
 
             customer_id = session['customer']
