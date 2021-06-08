@@ -68,16 +68,16 @@ def _get_shipping_rates(products, addr):
 
 
 def get_shipping_rate(products, addr, **config):
-    shipped_products = []
+    shipped_inventory = []
     for (product, quantity) in products:
         shipbob_id = product.metadata.get('shipbob_inventory_id')
         if shipbob_id is None: raise Exception('Missing shipbob_inventory_id metadata field for Stripe product')
-        shipped_products.append({
+        shipped_inventory.append({
             'id': int(shipbob_id),
             'quantity': quantity
         })
 
-    shipped_products = inventory_items_to_products(shipped_products)
+    shipped_products = inventory_items_to_products(shipped_inventory)
     rates = _get_shipping_rates(shipped_products, addr)
 
     # Get cheapest rate
@@ -90,7 +90,9 @@ def get_shipping_rate(products, addr, **config):
     shipment_id = str(uuid.uuid4()).replace('-', '')
     return rate, {
         'shipment_id': shipment_id,
-        'products': json.dumps(shipped_products)
+
+        # keep as inventory, will be converted again later
+        'products': json.dumps(shipped_inventory)
     }
 
 
