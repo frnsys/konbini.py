@@ -168,7 +168,7 @@ def buy_shipment(shipment_id, **kwargs):
     try:
         resp.raise_for_status()
     except:
-        raise Exception('{} for {}: {}'.format(resp.status_code, resp.url, resp.content))
+        raise Exception('{} for {}: {} (shipment_id: {})'.format(resp.status_code, resp.url, resp.content, shipment_id))
 
     data = resp.json()
     tracking_url = data['shipments'][0].get('tracking', {}).get('tracking_url')
