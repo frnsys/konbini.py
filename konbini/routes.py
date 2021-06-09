@@ -389,6 +389,10 @@ def checkout_completed_hook():
             if pi['status'] != 'succeeded' or pi['charges']['data'][0]['refunded']:
                 return '', 200
 
+            completed = pi['metadata'].get('completed')
+            if completed:
+                return '', 200
+
             customer_id = session['customer']
             customer = stripe.Customer.retrieve(customer_id)
             customer_email = customer['email']
@@ -398,12 +402,15 @@ def checkout_completed_hook():
             # shipment_id = meta['shipment_id']
             shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
 
+            # Mark as completed
+            stripe.PaymentIntent.modify(session['payment_intent'], metadata={'completed': True})
+
             line_items = stripe.checkout.Session.list_line_items(session['id'], limit=100)['data']
             items = [{
                 'amount': i['amount_total'],
                 'quantity': i['quantity'],
                 'description': i['description']
-            } for i in  line_items]
+            } for i in line_items]
 
             # Notify fulfillment person
             send_email(new_order_recipients,
