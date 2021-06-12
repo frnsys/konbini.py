@@ -170,8 +170,13 @@ def buy_shipment(shipment_id, **kwargs):
     except:
         raise Exception('{} for {}: {} (shipment_id: {})'.format(resp.status_code, resp.url, resp.content, shipment_id))
 
+    # We may not get a tracking url right away
     data = resp.json()
-    tracking_url = data['shipments'][0].get('tracking', {}).get('tracking_url')
+    shipments = data['shipments']
+    if shipments:
+        tracking_url = shipments[0].get('tracking', {}).get('tracking_url')
+    else:
+        tracking_url = None
     return {
         'tracking_url': tracking_url,
     }
