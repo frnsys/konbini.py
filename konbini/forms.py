@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from country_list import countries_for_language
-from wtforms.validators import Email, InputRequired
+from wtforms.validators import Email, Length, InputRequired
 from wtforms.fields import TextField, FormField, SelectField
 from wtforms.fields.html5 import EmailField
 
@@ -13,7 +13,7 @@ class AddressForm(FlaskForm):
     line1 = TextField('Address', [InputRequired()])
     line2 = TextField('Address 2')
     city = TextField('City', [InputRequired()])
-    state = TextField('State') # Not always used in int'l addresses
+    state = TextField('State', [Length(max=2)]) # Not always used in int'l addresses. Shipbob requires 2 character state abbreviations.
     postal_code = TextField('Zipcode', [InputRequired()])
     country = SelectField('Country', [InputRequired()], choices=countries, default='US')
 
