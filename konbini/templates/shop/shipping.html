@@ -18,7 +18,7 @@
         {{ render_field_with_errors(form.address.line2) }}
         <div class="column-3">
             {{ render_field_with_errors(form.address.city) }}
-            {{ render_field_with_errors(form.address.state) }}
+            {{ render_field_with_errors(form.address.state, maxlength=2) }}
             {% if not config.KONBINI_INTL_SHIPPING %}
                 {{ render_field_with_errors(form.address.postal_code) }}
             {% endif %}
