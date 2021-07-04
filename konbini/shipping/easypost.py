@@ -89,6 +89,9 @@ def buy_shipment(shipment_id, **kwargs):
         'tracking_url': shipment.tracker.public_url
     }
 
-def shipment_exists(shipment_id):
+def get_tracking_url(shipment_id):
     shipment = easypost.Shipment.retrieve(shipment_id)
-    return shipment is not None
+    if shipment is not None:
+        return shipment.tracker.public_url
+    else:
+        return None

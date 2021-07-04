@@ -182,7 +182,7 @@ def buy_shipment(shipment_id, **kwargs):
     }
 
 
-def shipment_exists(shipment_id):
+def get_tracking_url(shipment_id):
     # Shipbob's API docs say this will filter by reference ids,
     # the endpoint actually just returns all orders...but
     # using this just in case they ever get around to fixing that.
@@ -193,4 +193,11 @@ def shipment_exists(shipment_id):
     })
     orders = resp.json()
     matches = [order for order in orders if order['reference_id'] == shipment_id]
-    return len(matches) > 0
+    if matches:
+        order = matches[0]
+        if order['shipments']:
+            return order['shipments'][0]['tracking']
+        else:
+            return None
+    else:
+        return None
