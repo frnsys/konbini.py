@@ -88,3 +88,7 @@ def buy_shipment(shipment_id, **kwargs):
         'label_url': shipment.postage_label.label_url,
         'tracking_url': shipment.tracker.public_url
     }
+
+def shipment_exists(shipment_id):
+    shipment = easypost.Shipment.retrieve(shipment_id)
+    return shipment is not None

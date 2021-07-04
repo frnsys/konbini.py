@@ -173,10 +173,24 @@ def buy_shipment(shipment_id, **kwargs):
     # We may not get a tracking url right away
     data = resp.json()
     shipments = data['shipments']
-    if shipments:
+    if shipments and shipments[0] is not None:
         tracking_url = shipments[0].get('tracking', {}).get('tracking_url')
     else:
         tracking_url = None
     return {
         'tracking_url': tracking_url,
     }
+
+
+def shipment_exists(shipment_id):
+    # Shipbob's API docs say this will filter by reference ids,
+    # the endpoint actually just returns all orders...but
+    # using this just in case they ever get around to fixing that.
+    data = {'ReferenceIds': [shipment_id]}
+    resp = requests.get('https://api.shipbob.com/1.0/order', json=data, headers={
+        'shipbob_channel_id': current_app.config['SHIPBOB_CHANNEL_ID'],
+        'Authorization': 'bearer {}'.format(current_app.config['SHIPBOB_API_KEY'])
+    })
+    orders = resp.json()
+    matches = [order for order in orders if order['reference_id'] == shipment_id]
+    return len(matches) > 0
