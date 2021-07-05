@@ -174,7 +174,8 @@ def buy_shipment(shipment_id, **kwargs):
     data = resp.json()
     shipments = data['shipments']
     if shipments and shipments[0] is not None:
-        tracking_url = shipments[0].get('tracking', {}).get('tracking_url')
+        tracking_data = shipments[0].get('tracking', None) or {}
+        tracking_url = tracking_data.get('tracking_url')
     else:
         tracking_url = None
     return {
