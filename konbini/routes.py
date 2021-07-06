@@ -369,8 +369,8 @@ def checkout_completed_hook():
             shipment_meta = {}
             if meta['shipment_id'] is not None:
                 # shipment_id = meta['shipment_id']
-                tracking_url = shipping.get_tracking_url(meta['shipment_id'])
-                if tracking_url is None:
+                exists, tracking_url = shipping.shipment_exists, (meta['shipment_id'])
+                if not exists:
                     shipment_meta = shipping.buy_shipment(name=name, **meta) # shipment_id already in meta
                 else:
                     shipment_meta = {'tracking_url': tracking_url}
@@ -404,8 +404,8 @@ def checkout_completed_hook():
             # Purchase shipping label
             meta = session['metadata']
             # shipment_id = meta['shipment_id']
-            tracking_url = shipping.get_tracking_url(meta['shipment_id'])
-            if tracking_url is None:
+            exists, tracking_url = shipping.shipment_exists(meta['shipment_id'])
+            if not exists:
                 shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
             else:
                 shipment_meta = {'tracking_url': tracking_url}
