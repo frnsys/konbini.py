@@ -20,12 +20,7 @@ bp = Blueprint('shop', __name__, template_folder='templates')
 
 
 def is_in_stock(sku):
-    inv = sku['inventory']
-    if inv['type'] == 'bucket' and inv['value'] == 'out_of_stock':
-        return False
-    elif inv['type'] == 'finite' and inv['quantity'] == 0:
-        return False
-    return True
+    return sku.metadata.get('sold_out') == 'true'
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
