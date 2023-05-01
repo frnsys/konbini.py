@@ -11,7 +11,7 @@ setup(
     include_package_data=True,
     packages=['konbini', 'flask_konbini', 'konbini.shipping'],
     install_requires=[
-        'Flask==1.0.2',
+        'Flask==2.3.2',
         'Flask-WTF==0.14.2',
         'Flask-Mail==0.9.1',
         'stripe==2.48.0',
