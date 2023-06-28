@@ -20,7 +20,7 @@ bp = Blueprint('shop', __name__, template_folder='templates')
 
 
 def is_in_stock(sku):
-    return sku.metadata.get('sold_out') == 'true'
+    return sku.metadata.get('sold_out') != 'true'
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
