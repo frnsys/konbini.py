@@ -1,7 +1,7 @@
 import stripe
 
 def get_products():
-    return stripe.Product.list(limit=100, active=True)['data']
+    return stripe.Product.list(expand=['data.default_price'], limit=100, active=True)['data']
 
 def get_product(id):
     return stripe.Product.retrieve('prod_{}'.format(id))
