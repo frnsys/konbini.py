@@ -4,7 +4,7 @@ def get_products():
     return stripe.Product.list(expand=['data.default_price'], limit=100, active=True)['data']
 
 def get_product(id):
-    return stripe.Product.retrieve('prod_{}'.format(id))
+    return stripe.Product.retrieve('prod_{}'.format(id), expand=['default_price'])
 
 def get_customers(email):
     resp = stripe.Customer.list(email=email, limit=100)
