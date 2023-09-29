@@ -24,3 +24,8 @@ class ShippingForm(FlaskForm):
 
 class EmailForm(FlaskForm):
     email = EmailField('Email', [InputRequired(), Email()])
+
+class AddToCartForm(FlaskForm):
+    name = HiddenField('Name')
+    sku = HiddenField('Sku')
+    product = HiddenField('Product')
