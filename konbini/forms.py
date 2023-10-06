@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from country_list import countries_for_language
 from wtforms.validators import Email, Length, InputRequired
-from wtforms.fields import TextField, FormField, SelectField
+from wtforms.fields import TextField, FormField, SelectField, HiddenField
 from wtforms.fields.html5 import EmailField
 
 countries = countries_for_language('en')
