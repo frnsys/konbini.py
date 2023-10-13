@@ -12,7 +12,7 @@ setup(
     packages=['konbini', 'flask_konbini', 'konbini.shipping'],
     install_requires=[
         'Flask==2.0.3',
-        'Flask-WTF==0.14.2',
+        'Flask-WTF==1.0.1',
         'Flask-Mail==0.9.1',
         'stripe==2.48.0',
         'sentry-sdk==0.6.9',
