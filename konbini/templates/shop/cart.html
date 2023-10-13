@@ -6,6 +6,7 @@
         <input type='hidden' name='name' value={{ name }}>
         <input type='hidden' name='product' value={{ product }}>
         <input type='hidden' name='quantity' value={{ quantity }}>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="submit" value={{ icon }}>
     </form>
 {% endmacro %}
