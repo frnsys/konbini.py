@@ -67,7 +67,7 @@ def index():
 def product(id):
     id = 'prod_{}'.format(id)
     try:
-        product = stripe.Product.retrieve(id)
+        product = stripe.Product.retrieve(id, expand=['default_price'])
     except stripe.error.InvalidRequestError as err:
         current_app.logger.debug(str(err))
         abort(404)
@@ -188,7 +188,7 @@ def pay():
     if not session.get('shipping'):
         return redirect(url_for('shop.cart'))
 
-    products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id']), quantity)
+    products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id'], expand=['default_price']), quantity)
             for sku_id, quantity in session['cart'].items()]
     rate, order_meta = shipping.get_shipping_rate(products, session['shipping'], **current_app.config)
     for k, v in session['shipping']['address'].items():
@@ -286,7 +286,7 @@ def subscribe_invoice_hook():
         # Only do the following if we can even charge
         if has_payment_method:
             sub = stripe.Subscription.retrieve(invoice['subscription'])
-            prod = stripe.Product.retrieve(sub['plan']['product'])
+            prod = stripe.Product.retrieve(sub['plan']['product'], expand=['default_price'])
             if prod['metadata'].get('shipped') == 'true':
                 # Check that there is a valid address for the customer
                 shipping_info = cus['shipping'] or {}
