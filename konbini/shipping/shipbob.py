@@ -84,6 +84,7 @@ def _get_shipping_rates(products, addr):
     data = {
         'address': address,
         'products': products,
+        'shipping_methods': None,
     }
     resp = requests.post('https://api.shipbob.com/1.0/order/estimate', json=data, headers={
         'shipbob_channel_id': current_app.config['SHIPBOB_CHANNEL_ID'],
