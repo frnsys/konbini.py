@@ -75,7 +75,7 @@ def get_shipping_rate(products, addr, **config):
     lowest_rate = shipment.lowest_rate()
 
     # Convert to cents
-    return math.ceil(parse(lowest_rate.rate) * 100), {
+    return math.ceil(float(lowest_rate.rate) * 100), {
         'shipment_id': shipment.id
     }
 
