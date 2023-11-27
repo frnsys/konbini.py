@@ -90,7 +90,7 @@ def buy_shipment(shipment_id, **kwargs):
 
 def shipment_exists(shipment_id):
     shipment = easypost.client.shipment.retrieve(shipment_id)
-    if shipment is not None:
+    if shipment is not None and shipment.tracking_code:
         return True, shipment.tracker.public_url
     else:
         return False, None
