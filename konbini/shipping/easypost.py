@@ -81,15 +81,15 @@ def get_shipping_rate(products, addr, **config):
 
 
 def buy_shipment(shipment_id, **kwargs):
-    shipment = client.shipment.retrieve(shipment_id)
-    shipment = client.shipment.buy(shipment.id, rate=shipment.lowest_rate())
+    shipment = easypost.client.shipment.retrieve(shipment_id)
+    shipment = easypost.client.shipment.buy(shipment.id, rate=shipment.lowest_rate())
     return {
         'label_url': shipment.postage_label.label_url,
         'tracking_url': shipment.tracker.public_url
     }
 
 def shipment_exists(shipment_id):
-    shipment = client.shipment.retrieve(shipment_id)
+    shipment = easypost.client.shipment.retrieve(shipment_id)
     if shipment is not None:
         return True, shipment.tracker.public_url
     else:
