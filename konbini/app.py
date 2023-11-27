@@ -11,7 +11,7 @@ stripe.api_key = config.STRIPE_SECRET_KEY
 
 if 'EASYPOST_API_KEY' in dir(config):
     import easypost
-    easypost.api_key = config.EASYPOST_API_KEY
+    easypost.client = easypost.EasyPostClient(config.EASYPOST_API_KEY)
 
 def create_app(package_name=__name__, static_folder='static', template_folder='templates', **config_overrides):
     app = Flask(package_name,

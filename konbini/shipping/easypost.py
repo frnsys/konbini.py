@@ -69,28 +69,27 @@ def get_shipping_rate(products, addr, **config):
             **config['KONBINI_CUSTOMS']
         )
         kwargs['customs_info'] = customs_info
-    shipment = easypost.Shipment.create(**kwargs)
+    shipment = easypost.client.shipment.create(**kwargs)
 
     # Get cheapest rate
-    rate = min(float(r.rate) for r in shipment.rates)
+    lowest_rate = shipment.lowest_rate()
 
     # Convert to cents
-    return math.ceil(rate*100), {
+    return math.ceil(parse(lowest_rate.rate) * 100), {
         'shipment_id': shipment.id
     }
 
 
 def buy_shipment(shipment_id, **kwargs):
-    shipment = easypost.Shipment.retrieve(shipment_id)
-    rate = min(shipment.rates, key=lambda r: float(r.rate))
-    shipment.buy(rate=rate)
+    shipment = client.shipment.retrieve(shipment_id)
+    shipment = client.shipment.buy(shipment.id, rate=shipment.lowest_rate())
     return {
         'label_url': shipment.postage_label.label_url,
         'tracking_url': shipment.tracker.public_url
     }
 
 def shipment_exists(shipment_id):
-    shipment = easypost.Shipment.retrieve(shipment_id)
+    shipment = client.shipment.retrieve(shipment_id)
     if shipment is not None:
         return True, shipment.tracker.public_url
     else:
