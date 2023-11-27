@@ -6,7 +6,10 @@ from .auth import auth_required
 from .forms import EmailForm, ShippingForm
 from pyusps import address_information
 from urllib.parse import urlparse, urljoin
+from flask_wtf.csrf import CSRFProtect
 from flask import Blueprint, render_template, redirect, request, session, abort, url_for, flash, current_app, jsonify
+
+csrf = CSRFProtect()
 
 USPS_ADDRESS_KEYS = {
     'address': 'line1',
@@ -330,6 +333,7 @@ def subscribe_invoice_hook():
 
 
 @bp.route('/checkout/completed', methods=['POST'])
+@csrf.exempt
 def checkout_completed_hook():
     new_order_recipients = current_app.config['NEW_ORDER_RECIPIENTS']
     payload = request.data
