@@ -64,7 +64,7 @@ def get_shipping_rate(products, addr, **config):
                 # hs_tariff_number # isn't required by easypost
             )
             customs_items.append(customs_item)
-        customs_info = client.easypost.customs_item.create(
+        customs_info = easypost.client.customs_item.create(
             customs_items=customs_items,
             **config['KONBINI_CUSTOMS']
         )
