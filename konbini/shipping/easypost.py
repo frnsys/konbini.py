@@ -54,7 +54,7 @@ def get_shipping_rate(products, addr, **config):
                 price = prices[0].unit_amount/100 # cents to USD
 
             # Create customs item. We are making a few assumptions here
-            customs_item = easypost.CustomsItem.create(
+            customs_item = easypost.client.customs_item.create(
                 quantity=quantity,
                 description=product.description,
                 value=price,
@@ -64,7 +64,7 @@ def get_shipping_rate(products, addr, **config):
                 # hs_tariff_number # isn't required by easypost
             )
             customs_items.append(customs_item)
-        customs_info = easypost.CustomsInfo.create(
+        customs_info = client.easypost.customs_item.create(
             customs_items=customs_items,
             **config['KONBINI_CUSTOMS']
         )
