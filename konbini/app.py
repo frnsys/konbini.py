@@ -4,7 +4,6 @@ import sentry_sdk
 from flask import Flask
 from flask_mail import Mail
 from .routes import bp as shop_bp
-from .routes import csrf
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 stripe.api_key = config.STRIPE_SECRET_KEY
@@ -23,7 +22,6 @@ def create_app(package_name=__name__, static_folder='static', template_folder='t
     # Apply overrides
     app.config.update(config_overrides)
 
-    csrf.init_app(app)
     app.mail = Mail(app)
     app.register_blueprint(shop_bp)
 
