@@ -53,6 +53,8 @@ def get_shipping_rate(products, addr, **config):
                 prices = stripe.Price.list(limit=100, product=product.id, active=True)['data']
                 price = prices[0].unit_amount/100 # cents to USD
 
+            hs_tariff_number = product.metadata.get("hs_tariff_number")
+            
             # Create customs item. We are making a few assumptions here
             customs_item = easypost.client.customs_item.create(
                 quantity=quantity,
@@ -61,7 +63,7 @@ def get_shipping_rate(products, addr, **config):
                 weight=dims['weight'],
                 code=product.id,
                 origin_country='US', # NOTE assumed to be US
-                # hs_tariff_number # isn't required by easypost
+                hs_tariff_number=hs_tariff_number
             )
             customs_items.append(customs_item)
         customs_info = easypost.client.customs_info.create(
