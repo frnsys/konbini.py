@@ -19,6 +19,7 @@
             {% for sku in skus %}
                 <div class="product--sku">
                     <form action='{{ url_for('shop.cart') }}' method='POST'>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type='hidden' name='sku' value={{ sku.id }}>
                         <input type='hidden' name='name' value='{{ product.name }} - {{ sku.attributes.values()|join(', ') }}'>
                         <div class="sku">
