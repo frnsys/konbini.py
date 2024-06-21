@@ -399,30 +399,33 @@ def checkout_completed_hook():
             # Purchase shipping label
             meta = session['metadata']
             # shipment_id = meta['shipment_id']
-            exists, tracking_url = shipping.shipment_exists(meta['shipment_id'])
-            if not exists:
-                shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
+            if 'print_on_demand' in meta:
+                # handle print on demand
             else:
-                shipment_meta = {'tracking_url': tracking_url}
-
-            # Mark as completed
-            stripe.PaymentIntent.modify(session['payment_intent'], metadata={'completed': True})
-
-            line_items = stripe.checkout.Session.list_line_items(session['id'], limit=100)['data']
-            items = [{
-                'amount': i['amount_total'],
-                'quantity': i['quantity'],
-                'description': i['description']
-            } for i in line_items]
-
-            # Notify fulfillment person
-            send_email(new_order_recipients,
-                       'New order placed', 'new_order',
-                       order=pi, items=items, label_url=shipment_meta.get('label_url'))
-
-            # Notify customer
-            send_email([customer_email], 'Thank you for your order', 'complete_order',
-                    order=pi, items=items, tracking_url=shipment_meta.get('tracking_url'))
+                exists, tracking_url = shipping.shipment_exists(meta['shipment_id'])
+                if not exists:
+                    shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
+                else:
+                    shipment_meta = {'tracking_url': tracking_url}
+    
+                # Mark as completed
+                stripe.PaymentIntent.modify(session['payment_intent'], metadata={'completed': True})
+    
+                line_items = stripe.checkout.Session.list_line_items(session['id'], limit=100)['data']
+                items = [{
+                    'amount': i['amount_total'],
+                    'quantity': i['quantity'],
+                    'description': i['description']
+                } for i in line_items]
+    
+                # Notify fulfillment person
+                send_email(new_order_recipients,
+                           'New order placed', 'new_order',
+                           order=pi, items=items, label_url=shipment_meta.get('label_url'))
+    
+                # Notify customer
+                send_email([customer_email], 'Thank you for your order', 'complete_order',
+                        order=pi, items=items, tracking_url=shipment_meta.get('tracking_url'))
     return '', 200
 
 
