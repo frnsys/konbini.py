@@ -1,15 +1,23 @@
 import math
 import stripe
 import easypost
+from flask import current_app
+from konbini.util import send_email
 
 
 def get_shipping_rate(products, addr, **config):
     """Estimate a shipping rate for a product.
     This does not actually purchase shipping, this is just to figure out
     how much to charge for it."""
+    metadata_fields = ['height', 'weight', 'length', 'width']
+    for p in products:
+        missing_fields = [k for k in metadata_fields if k not in p.metadata]
+        if missing_fields:
+            new_order_recipients = current_app.config['NEW_ORDER_RECIPIENTS']
+            send_email(new_order_recipients, "Missing product metadata", "admin_msg", message="Product {} is missing metadata fields in Stripe: {}".format(p.name, ", ".join(missing_fields)))
     package_dimensions = [{
         k: float(p.metadata.get(k))
-        for k in ['height', 'weight', 'length', 'width']
+        for k in metadata_fields
     } for p, _ in products]
 
     # ENH This should use some 3d bin packing algorithm
@@ -54,7 +62,7 @@ def get_shipping_rate(products, addr, **config):
                 price = prices[0].unit_amount/100 # cents to USD
 
             hs_tariff_number = product.metadata.get("hs_tariff_number")
-            
+
             # Create customs item. We are making a few assumptions here
             customs_item = easypost.client.customs_item.create(
                 quantity=quantity,
