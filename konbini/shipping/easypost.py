@@ -10,7 +10,7 @@ def get_shipping_rate(products, addr, **config):
     This does not actually purchase shipping, this is just to figure out
     how much to charge for it."""
     metadata_fields = ['height', 'weight', 'length', 'width']
-    for p in products:
+    for p, _ in products:
         missing_fields = [k for k in metadata_fields if k not in p.metadata]
         if missing_fields:
             new_order_recipients = current_app.config['NEW_ORDER_RECIPIENTS']
