@@ -401,6 +401,7 @@ def checkout_completed_hook():
             # shipment_id = meta['shipment_id']
             if 'print_on_demand' in meta:
                 # handle print on demand
+                pass
             else:
                 exists, tracking_url = shipping.shipment_exists(meta['shipment_id'])
                 if not exists:
