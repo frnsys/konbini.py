@@ -10,24 +10,28 @@ def get_shipping_rate(products, addr, **config):
     This does not actually purchase shipping, this is just to figure out
     how much to charge for it."""
     metadata_fields = ['height', 'weight', 'length', 'width']
-    for p, _ in products:
+    package_dimensions = []
+    total_weight = 0
+    for p, q in products:
         missing_fields = [k for k in metadata_fields if k not in p.metadata]
         if missing_fields:
             new_order_recipients = current_app.config['NEW_ORDER_RECIPIENTS']
             send_email(new_order_recipients, "Missing product metadata", "admin_msg", message="Product {} is missing metadata fields in Stripe: {}".format(p.name, ", ".join(missing_fields)))
-    package_dimensions = [{
-        k: float(p.metadata.get(k))
-        for k in metadata_fields
-    } for p, _ in products]
+
+        package_dimensions.append({
+            k: float(p.metadata.get(k))
+            for k in metadata_fields
+        })
+
+        # We can at least sum the weights
+        total_weight += p['weight']*q
 
     # ENH This should use some 3d bin packing algorithm
     # but for now just take the largest product volume
     # ENH this should take quantity into account
     dimensions = max(package_dimensions,
-            key=lambda p: p['height'] * p['weight'] * p['length'])
+            key=lambda p: p['height'] * p['width'] * p['length'])
 
-    # We can at least sum the weights
-    total_weight = sum(p['weight'] for p in package_dimensions)
     dimensions['weight'] = total_weight
 
     kwargs = {

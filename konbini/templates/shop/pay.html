@@ -11,7 +11,7 @@
                     <tr>
                         <td>{{ item.name }}</td>
                         <td>{{ item.quantity or '' }}</td>
-                        <td>{{ '${:,.2f}'.format(item.amount/100) }}</td>
+                        <td>{{ '${:,.2f}'.format((item.amount/100)*item.quantity) }}</td>
                     </tr>
                 {% endfor %}
                 <tr>
