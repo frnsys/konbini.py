@@ -52,7 +52,7 @@ def normalize_address(address):
                 changed = True
         norm_addr['country'] = 'US'
         return norm_addr, changed
-    except ValueError:
+    except ValueError as error:
         return None, True
 
 @bp.route('/')
@@ -190,28 +190,43 @@ def pay():
 
     products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id'], expand=['default_price']), quantity)
             for sku_id, quantity in session['cart'].items()]
-    rate, order_meta = shipping.get_shipping_rate(products, session['shipping'], **current_app.config)
-    for k, v in session['shipping']['address'].items():
-        order_meta['address_{}'.format(k)] = v
-    order_meta['name'] = session['shipping']['name']
 
-    items = [{
-        'currency': 'usd',
-        'name': session['meta'][sku_id]['name'],
-        'amount': session['meta'][sku_id]['price'],
-        'quantity': quantity,
-        'exclude_tax': session['meta'][sku_id]['exclude_tax'],
-    } for sku_id, quantity in session['cart'].items()]
+    # Sort out print on demand products before sending them to calculate shipping rate
+    shipping_products = []
+    print_on_demand_products = []
+    items = []
+    for sku_id, q in session['cart'].items():
+        p = stripe.Product.retrieve(session['meta'][sku_id]['product_id'], expand=['default_price'])
+        if 'print_on_demand' in p.metadata.keys():
+            print_on_demand_products.append((p,q))
+        else:
+            shipping_products.append((p,q))
 
-    items.append({
-        'currency': 'usd',
-        'name': 'Shipping',
-        'amount': rate,
-        'quantity': 1,
-        'exclude_tax': True
-    })
-    total = sum(i['amount'] for i in items)
-    tax_total = sum(i['amount'] for i in items if not i['exclude_tax'])
+        items.append({
+            'currency': 'usd',
+            'name': session['meta'][sku_id]['name'],
+            'amount': session['meta'][sku_id]['price'],
+            'quantity': q,
+            'exclude_tax': session['meta'][sku_id]['exclude_tax'],
+        })
+
+    order_meta = {}
+    if shipping_products:
+        rate, order_meta = shipping.get_shipping_rate(shipping_products, session['shipping'], **current_app.config)
+        for k, v in session['shipping']['address'].items():
+            order_meta['address_{}'.format(k)] = v
+        order_meta['name'] = session['shipping']['name']
+
+        items.append({
+            'currency': 'usd',
+            'name': 'Shipping',
+            'amount': rate,
+            'quantity': 1,
+            'exclude_tax': True
+        })
+
+    total = sum(i['amount']*i['quantity'] for i in items)
+    tax_total = sum(i['amount']*i['quantity'] for i in items if not i['exclude_tax'])
 
     # Can't pass this to the session
     for i in items:
@@ -234,7 +249,7 @@ def pay():
         'cancel_url': url_for('shop.checkout_cancel', _external=True),
         'metadata': order_meta
     }
-
+    print(order_meta)
     # Try to find customer with existing email
     customers = core.get_customers(session['email'])
     if customers:
@@ -245,7 +260,6 @@ def pay():
     address_changed = request.args.get('address_changed')
     session['stripe'] = stripe.checkout.Session.create(**kwargs)
 
-    total = sum(i['amount'] for i in items)
     return render_template('shop/pay.html',
             total=total,
             items=items,
@@ -328,7 +342,6 @@ def subscribe_invoice_hook():
 
     return '', 200
 
-
 @bp.route('/checkout/completed', methods=['POST'])
 def checkout_completed_hook():
     new_order_recipients = current_app.config['NEW_ORDER_RECIPIENTS']
@@ -396,37 +409,36 @@ def checkout_completed_hook():
             customer = stripe.Customer.retrieve(customer_id)
             customer_email = customer['email']
 
+            line_items = stripe.checkout.Session.list_line_items(session['id'], limit=100)['data']
+            items = [{
+                'amount': i['amount_total'],
+                'quantity': i['quantity'],
+                'description': i['description']
+            } for i in line_items]
+
             # Purchase shipping label
             meta = session['metadata']
+            shipment_meta = {}
             # shipment_id = meta['shipment_id']
-            if 'print_on_demand' in meta:
-                # handle print on demand
-                pass
-            else:
+            if meta.get('shipment_id') is not None:
                 exists, tracking_url = shipping.shipment_exists(meta['shipment_id'])
                 if not exists:
                     shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
                 else:
                     shipment_meta = {'tracking_url': tracking_url}
-    
-                # Mark as completed
-                stripe.PaymentIntent.modify(session['payment_intent'], metadata={'completed': True})
-    
-                line_items = stripe.checkout.Session.list_line_items(session['id'], limit=100)['data']
-                items = [{
-                    'amount': i['amount_total'],
-                    'quantity': i['quantity'],
-                    'description': i['description']
-                } for i in line_items]
-    
-                # Notify fulfillment person
-                send_email(new_order_recipients,
-                           'New order placed', 'new_order',
-                           order=pi, items=items, label_url=shipment_meta.get('label_url'))
-    
-                # Notify customer
-                send_email([customer_email], 'Thank you for your order', 'complete_order',
-                        order=pi, items=items, tracking_url=shipment_meta.get('tracking_url'))
+
+            # Mark as completed
+            stripe.PaymentIntent.modify(session['payment_intent'], metadata={'completed': True})
+
+            # Notify fulfillment person
+            send_email(new_order_recipients,
+                       'New order placed', 'new_order',
+                       order=pi, items=items, label_url=shipment_meta.get('label_url'))
+
+            # Notify customer
+            send_email([customer_email], 'Thank you for your order', 'complete_order',
+                    order=pi, items=items, tracking_url=shipment_meta.get('tracking_url'))
+
     return '', 200
 
 
