@@ -1,7 +1,7 @@
 import stripe
 import easypost
-from konbini_dev import core
-from konbini_dev.routes import bp
+from konbini import core
+from konbini.routes import bp
 
 class Konbini:
     def __init__(self, app=None):
