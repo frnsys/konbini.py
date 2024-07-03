@@ -52,7 +52,7 @@ def normalize_address(address):
                 changed = True
         norm_addr['country'] = 'US'
         return norm_addr, changed
-    except ValueError as error:
+    except ValueError:
         return None, True
 
 @bp.route('/')
@@ -188,19 +188,11 @@ def pay():
     if not session.get('shipping'):
         return redirect(url_for('shop.cart'))
 
-    products = [(stripe.Product.retrieve(session['meta'][sku_id]['product_id'], expand=['default_price']), quantity)
-            for sku_id, quantity in session['cart'].items()]
-
     # Sort out print on demand products before sending them to calculate shipping rate
-    shipping_products = []
-    print_on_demand_products = []
-    items = []
+    shipping_products, print_on_demand_products, items = [], [], []
     for sku_id, q in session['cart'].items():
         p = stripe.Product.retrieve(session['meta'][sku_id]['product_id'], expand=['default_price'])
-        if 'print_on_demand' in p.metadata.keys():
-            print_on_demand_products.append((p,q))
-        else:
-            shipping_products.append((p,q))
+        print_on_demand_products.append((p,q)) if 'print_on_demand' in p.metadata.keys() else shipping_products.append((p,q))
 
         items.append({
             'currency': 'usd',
@@ -249,7 +241,6 @@ def pay():
         'cancel_url': url_for('shop.checkout_cancel', _external=True),
         'metadata': order_meta
     }
-    print(order_meta)
     # Try to find customer with existing email
     customers = core.get_customers(session['email'])
     if customers:
