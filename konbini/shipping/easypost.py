@@ -10,29 +10,31 @@ def get_shipping_rate(products, addr, **config):
     This does not actually purchase shipping, this is just to figure out
     how much to charge for it."""
     metadata_fields = ['height', 'weight', 'length', 'width']
-    package_dimensions = []
-    total_weight = 0
+    total_weight, total_length, total_width, total_height = 0, 0, 0, 0
+
     for p, q in products:
         missing_fields = [k for k in metadata_fields if k not in p.metadata]
         if missing_fields:
             new_order_recipients = current_app.config['NEW_ORDER_RECIPIENTS']
             send_email(new_order_recipients, "Missing product metadata", "admin_msg", message="Product {} is missing metadata fields in Stripe: {}".format(p.name, ", ".join(missing_fields)))
 
-        package_dimensions.append({
-            k: float(p.metadata.get(k))
-            for k in metadata_fields
-        })
+        # current bin packing algorithm assumes products are flat books, takes the largest width and heights
+        # and calculates the height as a sum based on the assumption all books will be stacked flat on top of one another
+        # find the width and height needed to fit all books flat
+        length = max(float(p.metadata.get('length')),float(p.metadata.get('width')))
+        width = min(float(p.metadata.get('length')),float(p.metadata.get('width')))
+        if length > total_length:
+            total_length = length
+        if width > total_width:
+            total_width = width
 
-        # We can at least sum the weights
-        total_weight += p['weight']*q
+        # sum the heights
+        total_height += float(p.metadata.get('height'))*q
 
-    # ENH This should use some 3d bin packing algorithm
-    # but for now just take the largest product volume
-    # ENH this should take quantity into account
-    dimensions = max(package_dimensions,
-            key=lambda p: p['height'] * p['width'] * p['length'])
+        # sum the weights
+        total_weight += float(p.metadata.get('weight'))*q
 
-    dimensions['weight'] = total_weight
+    dimensions = {'height':total_height,'width':total_width,'length':total_length,'weight':total_weight}
 
     kwargs = {
         'from_address': config['KONBINI_SHIPPING_FROM'],
@@ -51,7 +53,7 @@ def get_shipping_rate(products, addr, **config):
     # https://www.easypost.com/customs-guide
     if addr['address']['country'] != 'US' and 'KONBINI_CUSTOMS' in config:
         customs_items = []
-        for (product, quantity), dims in zip(products, package_dimensions):
+        for product, quantity in products:
             # ENH this can be improved
             # Grab first SKU to get price
             if product['type'] == 'good':
@@ -72,7 +74,7 @@ def get_shipping_rate(products, addr, **config):
                 quantity=quantity,
                 description=product.description,
                 value=price,
-                weight=dims['weight'],
+                weight=product.metadata.get('weight'),
                 code=product.id,
                 origin_country='US', # NOTE assumed to be US
                 hs_tariff_number=hs_tariff_number
