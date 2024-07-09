@@ -1,11 +1,13 @@
 A new order
 
-Shipping Label: {{ label_url }}
+{% if label_url %}
+    Shipping Label: {{ label_url }}
+{% endif %}
 
 Order #{{ order.id[3:] }}
 
 {% for item in items %}
-{{ item.description }}
+    {{ item.description }}
     {{ item.quantity }}
     {{ '${:,.2f}'.format(item.amount/100) }}
 {% endfor %}
