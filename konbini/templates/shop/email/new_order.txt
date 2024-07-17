@@ -10,7 +10,7 @@ A new order
 Order #{{ order.id[3:] }}
 
 {% for item in items %}
-{{ item.description }}
+    {{ item.description }}
     {{ item.quantity }}
     {{ '${:,.2f}'.format(item.amount/100) }}
 {% endfor %}
