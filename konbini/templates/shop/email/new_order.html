@@ -8,12 +8,9 @@
   {% if label_url %}
     <div style="font-size:12px;line-height:18px;font-family:&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif;color:#222222;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 18px"><span style="font-size: 18px; line-height: 27px;"><strong><span style="line-height: 27px; font-size: 18px;"><a href="{{ label_url }}">Shipping Label</a></span></strong></span></p></div>
   {% endif %}
-<<<<<<< HEAD
   {% if customerOrderId %}
     <div style="font-size:12px;line-height:18px;font-family:&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif;color:#222222;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 18px"><span style="font-size: 18px; line-height: 27px;"><strong><span style="line-height: 27px; font-size: 18px;">Customer Order ID for RPI order: {{ customerOrderId }}</span></strong></span></p></div>
   {% endif %}
-=======
->>>>>>> bc23cdf22ffdcb952fb4e20f179bab0d8e35facc
   <div style="margin-top:20px;margin-bottom:10px;font-weight:bold;">Order #{{ order.id[3:] }}</div>
   <table style="width:100%;">
       {% for item in items %}
