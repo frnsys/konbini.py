@@ -1,6 +1,11 @@
 A new order
 
-Shipping Label: {{ label_url }}
+{% if label_url %}
+    Shipping Label: {{ label_url }}
+{% endif %}
+{% if customerOrderId %}
+    Customer Order ID for RPI order: {{ customerOrderId }}
+{% endif %}
 
 Order #{{ order.id[3:] }}
 

@@ -189,10 +189,13 @@ def pay():
         return redirect(url_for('shop.cart'))
 
     # Sort out print on demand products before sending them to calculate shipping rate
-    shipping_products, print_on_demand_products, items = [], [], []
+    items = []
+    shipper_products = dict((el,[]) for el in current_app.config.get('KONBINI_SHIPPERS'))
+    default_shipper = current_app.config.get('KONBINI_DEFAULT_SHIPPER')
     for sku_id, q in session['cart'].items():
         p = stripe.Product.retrieve(session['meta'][sku_id]['product_id'], expand=['default_price'])
-        print_on_demand_products.append((p,q)) if 'print_on_demand' in p.metadata.keys() else shipping_products.append((p,q))
+        shipper = p.metadata.get('shipper')
+        shipper_products[shipper].append((p,q)) if shipper else shipper_products[default_shipper].append((p,q))
 
         items.append({
             'currency': 'usd',
@@ -202,20 +205,26 @@ def pay():
             'exclude_tax': session['meta'][sku_id]['exclude_tax'],
         })
 
-    order_meta = {}
-    if shipping_products:
-        rate, order_meta = shipping.get_shipping_rate(shipping_products, session['shipping'], **current_app.config)
-        for k, v in session['shipping']['address'].items():
-            order_meta['address_{}'.format(k)] = v
-        order_meta['name'] = session['shipping']['name']
+    order_meta, total_shipping_rate = {'shippers':[]}, 0
+    for shipper, products in shipper_products.items():
+        if products:
+            rate, shipper_meta = shipping.get_shipping_rate(products, session['shipping'], shipper, **current_app.config)
+            order_meta.update(shipper_meta)
+            order_meta['shippers'].append(shipper)
+            total_shipping_rate += rate
+    order_meta['shippers'] = " ".join(order_meta['shippers'])
 
-        items.append({
-            'currency': 'usd',
-            'name': 'Shipping',
-            'amount': rate,
-            'quantity': 1,
-            'exclude_tax': True
-        })
+    for k, v in session['shipping']['address'].items():
+        order_meta['address_{}'.format(k)] = v
+    order_meta['name'] = session['shipping']['name']
+
+    items.append({
+        'currency': 'usd',
+        'name': 'Shipping',
+        'amount': total_shipping_rate,
+        'quantity': 1,
+        'exclude_tax': True
+    })
 
     total = sum(i['amount']*i['quantity'] for i in items)
     tax_total = sum(i['amount']*i['quantity'] for i in items if not i['exclude_tax'])
@@ -320,7 +329,7 @@ def subscribe_invoice_hook():
                         # Calculate shipping estimate
                         prod_id = prod['metadata']['shipped_product_id']
                         product = stripe.Product.retrieve(prod_id)
-                        rate, _ = shipping.get_shipping_rate([(product, 1)], shipping_info, **current_app.config)
+                        rate, _ = shipping.get_shipping_rate([(product, 1)], shipping_info, current_app.config.get('KONBINI_DEFAULT_SHIPPER'), **current_app.config)
 
                         # Add the item to this invoice
                         stripe.InvoiceItem.create(
@@ -364,13 +373,14 @@ def checkout_completed_hook():
                 name = ''
                 shipping_info = {}
 
+            default_shipper = current_app.config['KONBINI_DEFAULT_SHIPPER']
             meta = session['metadata']
             shipment_meta = {}
-            if meta['shipment_id'] is not None:
+            if meta.get(default_shipper+'_shipment_id') is not None:
                 # shipment_id = meta['shipment_id']
-                exists, tracking_url = shipping.shipment_exists, (meta['shipment_id'])
+                exists, tracking_url = shipping.shipment_exists(meta[default_shipper + '_shipment_id'], default_shipper)
                 if not exists:
-                    shipment_meta = shipping.buy_shipment(name=name, **meta) # shipment_id already in meta
+                    shipment_meta = shipping.buy_shipment(name=name, shipper=default_shipper, **meta) # shipment_id already in meta
                 else:
                     shipment_meta = {'tracking_url': tracking_url}
 
@@ -409,14 +419,21 @@ def checkout_completed_hook():
 
             # Purchase shipping label
             meta = session['metadata']
+            shippers = meta['shippers'].split()
             shipment_meta = {}
             # shipment_id = meta['shipment_id']
-            if meta.get('shipment_id') is not None:
-                exists, tracking_url = shipping.shipment_exists(meta['shipment_id'])
+            for shipper in shippers:
+                exists = False
+                if meta.get(shipper+"_shipment_id") is not None:
+                    exists, tracking_url = shipping.shipment_exists(meta[shipper+"_shipment_id"], shipper)
+                    shipment_meta[shipper] = {'tracking_url': tracking_url}
+
                 if not exists:
-                    shipment_meta = shipping.buy_shipment(**meta) # shipment_id already in meta
-                else:
-                    shipment_meta = {'tracking_url': tracking_url}
+                    shipment_meta[shipper] = shipping.buy_shipment(shipper=shipper, **meta) # shipment_id already in meta
+
+            label_url = shipment_meta['easypost'].get('label_url') if shipment_meta.get('easypost') else None
+            tracking_url = shipment_meta['easypost'].get('tracking_url') if shipment_meta.get('easypost') else None
+            customerOrderId = shipment_meta['rpi'].get('customerOrderId') if shipment_meta.get('rpi') else None
 
             # Mark as completed
             stripe.PaymentIntent.modify(session['payment_intent'], metadata={'completed': True})
@@ -424,11 +441,11 @@ def checkout_completed_hook():
             # Notify fulfillment person
             send_email(new_order_recipients,
                        'New order placed', 'new_order',
-                       order=pi, items=items, label_url=shipment_meta.get('label_url'))
+                       order=pi, items=items, label_url=label_url, customerOrderId=customerOrderId)
 
             # Notify customer
             send_email([customer_email], 'Thank you for your order', 'complete_order',
-                    order=pi, items=items, tracking_url=shipment_meta.get('tracking_url'))
+                    order=pi, items=items, tracking_url=tracking_url)
 
     return '', 200
 
@@ -482,7 +499,7 @@ def subscribe():
             plan_prod = stripe.Product.retrieve(prod_id)
             prod_id = plan_prod['metadata']['shipped_product_id']
             product = stripe.Product.retrieve(prod_id)
-            rate, order_meta = shipping.get_shipping_rate([(product, 1)], addr, **current_app.config)
+            rate, order_meta = shipping.get_shipping_rate([(product, 1)], addr, current_app.config.get('KONBINI_DEFAULT_SHIPPER'), **current_app.config)
             shipment_id = order_meta['shipment_id']
             line_items.append({
                 'name': 'Shipping',
