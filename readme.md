@@ -49,13 +49,32 @@ STRIPE_WEBHOOK_SECRETS = {
 Add this to your config:
 
 ```
-KONBINI_SHIPPER = 'easypost'
+KONBINI_SHIPPERS = ['easypost']
 ```
 
 Then get your [EasyPost API key](https://www.easypost.com/account/api-keys) and add it to `config.py`, e.g.:
 
 ```
 EASYPOST_API_KEY = 'EZ...'
+```
+
+Set default shipper:
+```
+KONBINI_DEFAULT_SHIPPER = 'easypost'
+```
+
+## RPI
+
+Add this to your config:
+
+```
+KONBINI_SHIPPERS = ['rpi']
+```
+
+Then get your RPI auth header and add it to confg:
+```
+RPI_URL = 'https://...'
+RPI_AUTH_HEADER = 'Basic ABCD...'
 ```
 
 ## ShipBob
@@ -65,7 +84,7 @@ I advise against using ShipBob because honestly it's total garbage.
 Add this to your config:
 
 ```
-KONBINI_SHIPPER = 'shipbob'
+KONBINI_SHIPPERS = ['shipbob']
 ```
 
 Then get your [ShipBob API key](https://developer.shipbob.com/) and add it to `config.py`, e.g.:

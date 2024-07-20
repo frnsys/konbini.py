@@ -1,5 +1,6 @@
 import math
 import stripe
+import json
 import easypost
 from flask import current_app
 from konbini.util import send_email
@@ -91,13 +92,10 @@ def get_shipping_rate(products, addr, **config):
     lowest_rate = shipment.lowest_rate()
 
     # Convert to cents
-    return math.ceil(float(lowest_rate.rate) * 100), {
-        'shipment_id': shipment.id
-    }
+    return math.ceil(float(lowest_rate.rate) * 100), {'easypost_shipment_id': shipment.id}
 
-
-def buy_shipment(shipment_id, **kwargs):
-    shipment = easypost.client.shipment.retrieve(shipment_id)
+def buy_shipment(**kwargs):
+    shipment = easypost.client.shipment.retrieve(kwargs['easypost_shipment_id'])
     shipment = easypost.client.shipment.buy(shipment.id, rate=shipment.lowest_rate())
     return {
         'label_url': shipment.postage_label.label_url,

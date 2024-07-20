@@ -1,14 +1,18 @@
 import importlib
 from flask import current_app
 
-def get_shipping_rate(products, addr, **config):
-    shipper = importlib.import_module('.'+current_app.config['KONBINI_SHIPPER'], 'konbini.shipping')
-    return shipper.get_shipping_rate(products, addr, **config)
+def get_shipping_rate(products, addr, shipper, **config):
+    shipper_module = importlib.import_module('.' + shipper, 'konbini.shipping')
+    return shipper_module.get_shipping_rate(products, addr, **config)
 
-def buy_shipment(shipment_id, **kwargs):
-    shipper = importlib.import_module('.'+current_app.config['KONBINI_SHIPPER'], 'konbini.shipping')
-    return shipper.buy_shipment(shipment_id, **kwargs)
+def buy_shipment(shipper, **kwargs):
+    shipper_module = importlib.import_module('.' + shipper, 'konbini.shipping')
+    return shipper_module.buy_shipment(**kwargs)
 
-def shipment_exists(shipment_id):
-    shipper = importlib.import_module('.'+current_app.config['KONBINI_SHIPPER'], 'konbini.shipping')
-    return shipper.shipment_exists(shipment_id)
+def shipment_exists(shipment_id, shipper):
+    shipper_module = importlib.import_module('.' + shipper, 'konbini.shipping')
+    return shipper_module.shipment_exists(shipment_id)
+
+def confirmation_email_text(shipper, **kwargs):
+    shipper_module = importlib.import_module('.' + shipper, 'konbini.shipping')
+    return shipper_module.confirmation_email(**kwargs)
