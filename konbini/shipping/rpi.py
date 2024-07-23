@@ -3,7 +3,7 @@ import stripe
 import json
 import requests
 from flask import current_app
-from konbini.util import send_email, check_state
+from konbini_dev.util import send_email, check_state
 
 url = current_app.config['RPI_URL']
 auth = {'Authorization': current_app.config['RPI_AUTH_HEADER']}
@@ -12,6 +12,9 @@ def get_shipping_rate(products, addr, **config):
     """Estimate a shipping rate for a product.
     This does not actually purchase shipping, this is just to figure out
     how much to charge for it."""
+    if addr['address']['country'] != 'US':
+        return 0, {'rpi_error': "There are products in your cart that cannot be delivered internationally."}
+
     metadata_fields = ['sku', 'pagecount', 'guts_pdf', 'cover_pdf']
     order_items = []
     for p, q in products:
@@ -86,14 +89,14 @@ def buy_shipment(**kwargs):
         "shippingClassification":"economy",
         "webhookUrl":"",
         "destination": {
-            "name": kwargs['name'],
+            "name": kwargs.get('name'),
             "company": "",
-            "address1": kwargs['address_line1'],
-            "address2": kwargs['address_line2'],
-            "city": kwargs['address_city'],
-            "state": check_state(kwargs['address_state']),
-            "postal": kwargs['address_postal_code'],
-            'country': kwargs['address_country'],
+            "address1": kwargs.get('address_line1'),
+            "address2": kwargs.get('address_line2'),
+            "city": kwargs.get('address_city'),
+            "state": check_state(kwargs.get('address_state')),
+            "postal": kwargs.get('address_postal_code'),
+            'country': kwargs.get('address_country'),
             "phone": "",
             "email": ""
         },
