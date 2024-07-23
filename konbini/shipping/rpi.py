@@ -3,7 +3,7 @@ import stripe
 import json
 import requests
 from flask import current_app
-from konbini_dev.util import send_email, check_state
+from konbini.util import send_email, check_state
 
 url = current_app.config['RPI_URL']
 auth = {'Authorization': current_app.config['RPI_AUTH_HEADER']}
