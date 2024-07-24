@@ -194,7 +194,9 @@ def pay():
     default_shipper = current_app.config.get('KONBINI_DEFAULT_SHIPPER')
     for sku_id, q in session['cart'].items():
         p = stripe.Product.retrieve(session['meta'][sku_id]['product_id'], expand=['default_price'])
-        shipper = p.metadata.get('shipper').lower()
+        shipper = p.metadata.get('shipper')
+        if shipper is not None:
+            shipper = shipper.lower()
         shipper_products[shipper].append((p,q)) if shipper else shipper_products[default_shipper].append((p,q))
 
         items.append({
