@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="sorry">
+    <h1>Sorry</h1>
+    <h2>Certain items in your cart cannot be shipped internationally.</h2>
+    <table>
+    {% for p,q in products %}
+      <tr>
+        <td>{{p.name}}</td>
+      </tr>
+    {% endfor %}
+    </table>
+</div>
+{% endblock %}

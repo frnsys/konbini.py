@@ -205,6 +205,7 @@ def pay():
             'exclude_tax': session['meta'][sku_id]['exclude_tax'],
         })
 
+    # calculate shipping rates for every shipper
     order_meta, total_shipping_rate = {'shippers':[]}, 0
     for shipper, products in shipper_products.items():
         if products:
@@ -213,6 +214,10 @@ def pay():
             order_meta['shippers'].append(shipper)
             total_shipping_rate += rate
     order_meta['shippers'] = " ".join(order_meta['shippers'])
+
+    # if rpi returns an error then show a sorry page
+    if order_meta.get('rpi_error'):
+        return render_template('shop/sorry.html', products=shipper_products['rpi'])
 
     for k, v in session['shipping']['address'].items():
         order_meta['address_{}'.format(k)] = v
@@ -433,7 +438,7 @@ def checkout_completed_hook():
 
             label_url = shipment_meta['easypost'].get('label_url') if shipment_meta.get('easypost') else None
             tracking_url = shipment_meta['easypost'].get('tracking_url') if shipment_meta.get('easypost') else None
-            customerOrderId = shipment_meta['rpi'].get('customerOrderId') if shipment_meta.get('rpi') else None
+            # customerOrderId = shipment_meta['rpi'].get('customerOrderId') if shipment_meta.get('rpi') else None
 
             # Mark as completed
             stripe.PaymentIntent.modify(session['payment_intent'], metadata={'completed': True})
@@ -441,7 +446,7 @@ def checkout_completed_hook():
             # Notify fulfillment person
             send_email(new_order_recipients,
                        'New order placed', 'new_order',
-                       order=pi, items=items, label_url=label_url, customerOrderId=customerOrderId)
+                       order=pi, items=items, label_url=label_url, rpi_status=shipment_meta.get('rpi'))
 
             # Notify customer
             send_email([customer_email], 'Thank you for your order', 'complete_order',

@@ -3,8 +3,12 @@ A new order
 {% if label_url %}
     Shipping Label: {{ label_url }}
 {% endif %}
-{% if customerOrderId %}
-    Customer Order ID for RPI order: {{ customerOrderId }}
+{% if rpi_status %}
+  RPI Order Info:
+  {% for k,v in rpi_status.items() %}
+      {{ k }}
+      {{ v }}
+  {% endfor %}
 {% endif %}
 
 Order #{{ order.id[3:] }}
